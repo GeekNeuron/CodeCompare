@@ -11,7 +11,7 @@
 
 ## Use Now
 
-> **[Start using the tool](https://geekneuron.github.io/CodeCompare)**
+> 🔧 **[Start using the tool](https://geekneuron.github.io/CodeCompare)**
 
 ## License
 
