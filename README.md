@@ -1,6 +1,6 @@
 # CodeCompare
 
-**CodeCompare** is a lightweight, browser-based utility designed to visually compare two code snippets side by side. Built with pure HTML, CSS, and JavaScript, it offers an intuitive interface for developers to identify differences between code blocks without the need for external tools or installations.
+**CodeCompare** is a lightweight, browser-based utility designed to visually compare two code snippets side by side. Built with pure HTML, it offers an intuitive interface for developers to identify differences between code blocks without the need for external tools or installations.
 
 ## Features
 
@@ -33,19 +33,6 @@ To use CodeCompare locally:
 2. You'll see two text areas labeled "Code Snippet 1" and "Code Snippet 2".
 3. Paste your respective code snippets into these areas.
 4. Click the "Compare" button to highlight differences between the two snippets.
-
-## Project Structure
-
-```
-CodeCompare/
-├── index.html
-├── style.css
-└── script.js
-```
-
-- **index.html**: The main HTML file containing the structure of the web page.
-- **style.css**: Stylesheet for styling the components and layout.
-- **script.js**: JavaScript file handling the comparison logic and interactivity.
 
 ## Contributing
 
