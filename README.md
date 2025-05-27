@@ -5,7 +5,6 @@ CodeCompare is a simple and intuitive web-based utility to compare two snippets 
 ## Live Demo
 
 You can access a live demo of CodeCompare here: **[https://GeekNeuron.github.io/CodeCompare/](https://GeekNeuron.github.io/CodeCompare/)**
-*(Note: Make sure your GitHub Pages is correctly set up for this link to work.)*
 
 ## Features
 
