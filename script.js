@@ -5,6 +5,8 @@ function updateLineCount(textareaId, counterId) {
     if (textarea && counter) {
         const lines = textarea.value.split('\n').length;
         counter.textContent = `Lines: ${lines}`;
+    } else {
+        console.error(`Error in updateLineCount: Textarea or Counter element not found. ID1: ${textareaId}, ID2: ${counterId}`);
     }
 }
 
@@ -18,16 +20,22 @@ function clearAll() {
     const diffContainerDiv = document.getElementById('diffContainer');
     const legendDiv = document.getElementById('legend');
     const statsDiv = document.getElementById('stats');
+    const leftSideDiv = document.getElementById('leftSide');
+    const rightSideDiv = document.getElementById('rightSide');
 
-    if (originalCodeTextarea) originalCodeTextarea.value = '';
-    if (modifiedCodeTextarea) modifiedCodeTextarea.value = '';
-    if (leftLinesCounter) leftLinesCounter.textContent = 'Lines: 0';
-    if (rightLinesCounter) rightLinesCounter.textContent = 'Lines: 0';
+    if (originalCodeTextarea) originalCodeTextarea.value = ''; else console.error("clearAll: originalCode textarea not found");
+    if (modifiedCodeTextarea) modifiedCodeTextarea.value = ''; else console.error("clearAll: modifiedCode textarea not found");
+    if (leftLinesCounter) leftLinesCounter.textContent = 'Lines: 0'; else console.error("clearAll: leftLines counter not found");
+    if (rightLinesCounter) rightLinesCounter.textContent = 'Lines: 0'; else console.error("clearAll: rightLines counter not found");
     
-    if (emptyStateDiv) emptyStateDiv.style.display = 'block';
-    if (diffContainerDiv) diffContainerDiv.style.display = 'none';
-    if (legendDiv) legendDiv.style.display = 'none';
-    if (statsDiv) statsDiv.style.display = 'none';
+    if (emptyStateDiv) emptyStateDiv.style.display = 'block'; else console.error("clearAll: emptyState div not found");
+    if (diffContainerDiv) diffContainerDiv.style.display = 'none'; else console.error("clearAll: diffContainer div not found");
+    if (legendDiv) legendDiv.style.display = 'none'; else console.error("clearAll: legend div not found");
+    if (statsDiv) statsDiv.style.display = 'none'; else console.error("clearAll: stats div not found");
+
+    // Clear diff content as well
+    if (leftSideDiv) leftSideDiv.innerHTML = ''; else console.error("clearAll: leftSide div not found");
+    if (rightSideDiv) rightSideDiv.innerHTML = ''; else console.error("clearAll: rightSide div not found");
 }
 
 // Function to swap code
@@ -44,6 +52,10 @@ function swapCode() {
         
         updateLineCount('originalCode', 'leftLines');
         updateLineCount('modifiedCode', 'rightLines');
+    } else {
+        console.error("Error in swapCode: One or both textareas not found.");
+        if (!originalTextarea) console.error("originalCode textarea not found for swap");
+        if (!modifiedTextarea) console.error("modifiedCode textarea not found for swap");
     }
 }
 
@@ -62,7 +74,6 @@ function lcs(a, b) {
             }
         }
     }
-    
     return dp;
 }
 
@@ -72,52 +83,51 @@ function createDiff(original, modified) {
     const modifiedLines = modified.split('\n');
     
     const lcsTable = lcs(originalLines, modifiedLines);
-    const diffResult = []; // Renamed from 'diff' to avoid conflict if 'diff' is a global var.
+    const diffResult = [];
     
     let i = originalLines.length;
     let j = modifiedLines.length;
     
     while (i > 0 || j > 0) {
         if (i > 0 && j > 0 && originalLines[i - 1] === modifiedLines[j - 1]) {
-            diffResult.unshift({
-                type: 'equal',
-                originalLine: i - 1,
-                modifiedLine: j - 1,
-                content: originalLines[i - 1]
-            });
-            i--;
-            j--;
+            diffResult.unshift({ type: 'equal', originalLine: i - 1, modifiedLine: j - 1, content: originalLines[i - 1] });
+            i--; j--;
         } else if (j > 0 && (i === 0 || lcsTable[i][j - 1] >= lcsTable[i - 1][j])) {
-            diffResult.unshift({
-                type: 'added',
-                originalLine: null,
-                modifiedLine: j - 1,
-                content: modifiedLines[j - 1]
-            });
+            diffResult.unshift({ type: 'added', originalLine: null, modifiedLine: j - 1, content: modifiedLines[j - 1] });
             j--;
         } else if (i > 0 && (j === 0 || lcsTable[i][j - 1] < lcsTable[i - 1][j])) {
-            diffResult.unshift({
-                type: 'removed',
-                originalLine: i - 1,
-                modifiedLine: null,
-                content: originalLines[i - 1]
-            });
+            diffResult.unshift({ type: 'removed', originalLine: i - 1, modifiedLine: null, content: originalLines[i - 1] });
             i--;
-        } else { // Should not happen if LCS is correct, but as a fallback
-            break;
-        }
+        } else { break; }
     }
-    
     return diffResult;
 }
 
 // Main compare function
 function compareCode() {
-    const originalCode = document.getElementById('originalCode').value;
-    const modifiedCode = document.getElementById('modifiedCode').value;
+    const originalCodeTextarea = document.getElementById('originalCode');
+    const modifiedCodeTextarea = document.getElementById('modifiedCode');
     const loadingDiv = document.getElementById('loading');
     const emptyStateDiv = document.getElementById('emptyState');
     const diffContainerDiv = document.getElementById('diffContainer');
+    const legendDiv = document.getElementById('legend');
+    const statsDiv = document.getElementById('stats');
+
+    if (!originalCodeTextarea || !modifiedCodeTextarea) {
+        console.error("CompareCode Error: Code textarea(s) not found.");
+        alert("Error: Code input field(s) are missing. Cannot compare.");
+        return;
+    }
+    // These elements are crucial for UI updates during/after comparison
+    if (!loadingDiv || !emptyStateDiv || !diffContainerDiv || !legendDiv || !statsDiv) {
+        console.error("CompareCode Error: Essential UI elements for results display are missing.");
+        alert("Error: UI elements for displaying results are missing.");
+        // Depending on severity, you might choose to return or allow comparison with broken UI
+        // For now, let's allow it to proceed if textareas are there, but log the issue.
+    }
+
+    const originalCode = originalCodeTextarea.value;
+    const modifiedCode = modifiedCodeTextarea.value;
     
     if (!originalCode.trim() && !modifiedCode.trim()) {
         alert('Please enter at least one code block to compare.');
@@ -126,21 +136,25 @@ function compareCode() {
     
     if (loadingDiv) loadingDiv.classList.add('show');
     if (emptyStateDiv) emptyStateDiv.style.display = 'none';
-    if (diffContainerDiv) diffContainerDiv.style.display = 'none'; // Hide previous diff
+    if (diffContainerDiv) diffContainerDiv.style.display = 'none';
+    if (legendDiv) legendDiv.style.display = 'none'; // Hide initially
+    if (statsDiv) statsDiv.style.display = 'none';   // Hide initially
     
-    // Simulate delay for loading animation
     setTimeout(() => {
-        const diffResult = createDiff(originalCode, modifiedCode);
-        renderDiff(diffResult);
+        try {
+            const diffResult = createDiff(originalCode, modifiedCode);
+            renderDiff(diffResult);
         
-        if (loadingDiv) loadingDiv.classList.remove('show');
-        if (diffContainerDiv) diffContainerDiv.style.display = 'grid';
-        
-        const legendDiv = document.getElementById('legend');
-        const statsDiv = document.getElementById('stats');
-        if (legendDiv) legendDiv.style.display = 'flex';
-        if (statsDiv) statsDiv.style.display = 'flex';
+            if (diffContainerDiv) diffContainerDiv.style.display = 'grid';
+            if (legendDiv) legendDiv.style.display = 'flex';
+            if (statsDiv) statsDiv.style.display = 'flex';
 
+        } catch (error) {
+            console.error("Error during diff processing or rendering:", error);
+            alert("An error occurred while trying to compare the code. Please check console for details if possible.");
+        } finally {
+            if (loadingDiv) loadingDiv.classList.remove('show');
+        }
     }, 500);
 }
 
@@ -148,8 +162,14 @@ function compareCode() {
 function renderDiff(diffResult) {
     const leftSide = document.getElementById('leftSide');
     const rightSide = document.getElementById('rightSide');
+    const addedCountEl = document.getElementById('addedCount');
+    const removedCountEl = document.getElementById('removedCount');
+    const modifiedCountEl = document.getElementById('modifiedCount');
     
-    if (!leftSide || !rightSide) return;
+    if (!leftSide || !rightSide || !addedCountEl || !removedCountEl || !modifiedCountEl) {
+        console.error("RenderDiff Error: One or more display elements not found.");
+        return;
+    }
 
     leftSide.innerHTML = '';
     rightSide.innerHTML = '';
@@ -165,31 +185,17 @@ function renderDiff(diffResult) {
     
     diffResult.forEach((item) => {
         if (item.type === 'equal') {
-            if (currentGroup.length > 0) {
-                groupedDiff.push(currentGroup);
-                currentGroup = [];
-            }
+            if (currentGroup.length > 0) { groupedDiff.push(currentGroup); currentGroup = []; }
             groupedDiff.push([item]);
-        } else {
-            currentGroup.push(item);
-        }
+        } else { currentGroup.push(item); }
     });
-    
-    if (currentGroup.length > 0) {
-        groupedDiff.push(currentGroup);
-    }
+    if (currentGroup.length > 0) { groupedDiff.push(currentGroup); }
     
     groupedDiff.forEach(group => {
         if (group[0].type === 'equal') {
             const item = group[0];
-            const leftLine = createDiffLine(leftLineNumber, item.content, 'equal');
-            const rightLine = createDiffLine(rightLineNumber, item.content, 'equal');
-            
-            leftSide.appendChild(leftLine);
-            rightSide.appendChild(rightLine);
-            
-            leftLineNumber++;
-            rightLineNumber++;
+            leftSide.appendChild(createDiffLine(leftLineNumber++, item.content, 'equal'));
+            rightSide.appendChild(createDiffLine(rightLineNumber++, item.content, 'equal'));
         } else {
             const removedItems = group.filter(item => item.type === 'removed');
             const addedItems = group.filter(item => item.type === 'added');
@@ -200,39 +206,25 @@ function renderDiff(diffResult) {
                 const addedItem = addedItems[i];
                 
                 if (removedItem && addedItem) {
-                    const leftLine = createDiffLine(leftLineNumber, removedItem.content, 'modified');
-                    const rightLine = createDiffLine(rightLineNumber, addedItem.content, 'modified');
-                    leftSide.appendChild(leftLine);
-                    rightSide.appendChild(rightLine);
-                    leftLineNumber++;
-                    rightLineNumber++;
+                    leftSide.appendChild(createDiffLine(leftLineNumber++, removedItem.content, 'modified'));
+                    rightSide.appendChild(createDiffLine(rightLineNumber++, addedItem.content, 'modified'));
                     modifiedCount++;
                 } else if (removedItem) {
-                    const leftLine = createDiffLine(leftLineNumber, removedItem.content, 'removed');
-                    const rightLine = createDiffLine('', '', 'removed-empty'); // Placeholder for alignment
-                    leftSide.appendChild(leftLine);
-                    rightSide.appendChild(rightLine);
-                    leftLineNumber++;
+                    leftSide.appendChild(createDiffLine(leftLineNumber++, removedItem.content, 'removed'));
+                    rightSide.appendChild(createDiffLine('', '', 'removed-empty'));
                     removedCount++;
                 } else if (addedItem) {
-                    const leftLine = createDiffLine('', '', 'added-empty'); // Placeholder for alignment
-                    const rightLine = createDiffLine(rightLineNumber, addedItem.content, 'added');
-                    leftSide.appendChild(leftLine);
-                    rightSide.appendChild(rightLine);
-                    rightLineNumber++;
+                    leftSide.appendChild(createDiffLine('', '', 'added-empty'));
+                    rightSide.appendChild(createDiffLine(rightLineNumber++, addedItem.content, 'added'));
                     addedCount++;
                 }
             }
         }
     });
     
-    const addedCountEl = document.getElementById('addedCount');
-    const removedCountEl = document.getElementById('removedCount');
-    const modifiedCountEl = document.getElementById('modifiedCount');
-
-    if (addedCountEl) addedCountEl.textContent = addedCount;
-    if (removedCountEl) removedCountEl.textContent = removedCount;
-    if (modifiedCountEl) modifiedCountEl.textContent = modifiedCount;
+    addedCountEl.textContent = addedCount;
+    removedCountEl.textContent = removedCount;
+    modifiedCountEl.textContent = modifiedCount;
 }
 
 // Function to create a diff line element
@@ -242,11 +234,11 @@ function createDiffLine(lineNumber, content, type) {
     
     const lineNumberEl = document.createElement('div');
     lineNumberEl.className = 'line-number';
-    lineNumberEl.textContent = lineNumber === '' ? ' ' : String(lineNumber); // Use ' ' for empty placeholders
+    lineNumberEl.textContent = lineNumber === '' ? ' ' : String(lineNumber);
     
     const lineContent = document.createElement('div');
     lineContent.className = 'line-content';
-    lineContent.textContent = content; // textContent handles HTML entities safely
+    lineContent.textContent = content || ''; // Ensure content is not null/undefined
     
     line.appendChild(lineNumberEl);
     line.appendChild(lineContent);
@@ -254,7 +246,7 @@ function createDiffLine(lineNumber, content, type) {
     return line;
 }
 
-// Event listeners
+// Event listeners - DOMContentLoaded ensures this runs after the HTML is parsed
 document.addEventListener('DOMContentLoaded', function() {
     const originalCodeTextarea = document.getElementById('originalCode');
     const modifiedCodeTextarea = document.getElementById('modifiedCode');
@@ -264,7 +256,9 @@ document.addEventListener('DOMContentLoaded', function() {
 function hello() {
     console.log("Hello World!");
 }`;
-        updateLineCount('originalCode', 'leftLines'); // Initialize count
+        updateLineCount('originalCode', 'leftLines');
+    } else {
+        console.error("DOMContentLoaded: originalCode textarea not found.");
     }
     
     if (modifiedCodeTextarea) {
@@ -273,21 +267,24 @@ function hello() {
     console.log("Hello GeekNeuron!");
     console.log("Welcome to CodeCompare!");
 }`;
-        updateLineCount('modifiedCode', 'rightLines'); // Initialize count
+        updateLineCount('modifiedCode', 'rightLines');
+    } else {
+        console.error("DOMContentLoaded: modifiedCode textarea not found.");
     }
 
-    // Initialize line counts for empty textareas if not already done by placeholder logic
-    if (originalCodeTextarea && !originalCodeTextarea.value) updateLineCount('originalCode', 'leftLines');
-    if (modifiedCodeTextarea && !modifiedCodeTextarea.value) updateLineCount('modifiedCode', 'rightLines');
+    // Initialize line counts for empty textareas (handles case if placeholder logic doesn't cover it)
+    if (originalCodeTextarea && originalCodeTextarea.value === '') updateLineCount('originalCode', 'leftLines');
+    if (modifiedCodeTextarea && modifiedCodeTextarea.value === '') updateLineCount('modifiedCode', 'rightLines');
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.key === 'Enter') {
+            e.preventDefault(); 
+            compareCode();
+        } else if (e.ctrlKey && e.key === 'Delete') {
+            e.preventDefault(); 
+            clearAll();
+        }
+    });
 });
 
-// Keyboard shortcuts
-document.addEventListener('keydown', function(e) {
-    if (e.ctrlKey && e.key === 'Enter') {
-        e.preventDefault(); // Prevent default browser action for Ctrl+Enter
-        compareCode();
-    } else if (e.ctrlKey && e.key === 'Delete') {
-        e.preventDefault(); // Prevent default browser action
-        clearAll();
-    }
-});
