@@ -1,0 +1,195 @@
+/* General body styling */
+body {
+    font-family: 'Arial', sans-serif; /* Common sans-serif font */
+    margin: 0;
+    background-color: #f0f2f5; /* Light gray background */
+    color: #333; /* Default text color */
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* Align items to the top */
+    min-height: 100vh; /* Full viewport height */
+    padding: 20px;
+    box-sizing: border-box; /* Include padding and border in element's total width and height */
+}
+
+/* Main container for the content */
+.container {
+    background-color: #ffffff; /* White background for the container */
+    padding: 25px 30px;
+    border-radius: 10px; /* Rounded corners */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    text-align: center; /* Center align text within the container */
+    width: 100%;
+    max-width: 1000px; /* Max width of the container */
+}
+
+/* Heading style */
+h1 {
+    color: #1d2129; /* Dark blue for heading */
+    margin-bottom: 15px;
+    font-size: 2.2em; /* Slightly larger heading */
+}
+
+/* Paragraph style */
+p {
+    margin-bottom: 20px;
+    font-size: 1.1em;
+    color: #555; /* Slightly lighter text color for paragraphs */
+    line-height: 1.6; /* Improve readability */
+}
+
+/* Container for the two code editors */
+.editor-container {
+    display: flex;
+    justify-content: space-between; /* Space out the editors */
+    margin-bottom: 25px;
+    gap: 25px; /* Gap between editors */
+}
+
+/* Individual editor styling */
+.editor {
+    width: calc(50% - 12.5px); /* Calculate width considering the gap */
+    text-align: left; /* Align label text to the left */
+}
+
+/* Label for textareas */
+.editor label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #333;
+    font-size: 1em;
+}
+
+/* Textarea styling */
+textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccd0d5; /* Light gray border */
+    border-radius: 6px; /* Rounded corners for textarea */
+    box-sizing: border-box;
+    font-family: 'Consolas', 'Courier New', monospace; /* Monospace font for code */
+    font-size: 0.95em;
+    background-color: #f8f9fa; /* Very light background for textarea */
+    color: #1c1e21; /* Dark text color for code */
+    min-height: 250px; /* Minimum height for textareas */
+    resize: vertical; /* Allow vertical resizing only */
+}
+
+/* Focus style for textarea */
+textarea:focus {
+    outline: none; /* Remove default outline */
+    border-color: #007bff; /* Blue border on focus */
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25); /* Blue shadow on focus */
+}
+
+/* Button styling */
+button {
+    background-color: #007bff; /* Primary blue background */
+    color: white;
+    border: none;
+    padding: 12px 28px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 1.05em;
+    font-weight: 500; /* Medium font weight */
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Button hover effect */
+button:hover {
+    background-color: #0056b3; /* Darker blue on hover */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* Button active (pressed) effect */
+button:active {
+    background-color: #004a99; /* Even darker blue when active */
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+}
+
+/* Result display area styling */
+#result {
+    margin-top: 25px;
+    padding: 15px;
+    border: 1px solid #e0e0e0; /* Light gray border for result area */
+    border-radius: 6px;
+    background-color: #f9f9f9; /* Slightly off-white background */
+    text-align: left; /* Align result text to the left */
+    white-space: pre-wrap; /* Preserve whitespace and wrap text */
+    font-family: 'Consolas', 'Courier New', monospace; /* Monospace for results */
+    font-size: 0.9em;
+    min-height: 60px; /* Minimum height for the result area */
+    line-height: 1.5;
+}
+
+/* Styling for identical result */
+#result.identical {
+    color: #155724; /* Dark green text */
+    background-color: #d4edda; /* Light green background */
+    border-color: #c3e6cb; /* Greenish border */
+    border-left: 5px solid #28a745; /* Green left border */
+}
+
+/* Styling for different result */
+#result.different {
+    color: #721c24; /* Dark red text */
+    background-color: #f8d7da; /* Light red background */
+    border-color: #f5c6cb; /* Reddish border */
+    border-left: 5px solid #dc3545; /* Red left border */
+}
+
+/* Styling for error or empty input messages */
+#result.error {
+    color: #856404; /* Dark yellow/brown text */
+    background-color: #fff3cd; /* Light yellow background */
+    border-color: #ffeeba; /* Yellowish border */
+    border-left: 5px solid #ffc107; /* Amber/Yellow left border */
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 768px) {
+    .container {
+        padding: 20px;
+        margin-top: 10px; /* Add some top margin on small screens */
+    }
+    h1 {
+        font-size: 1.8em;
+    }
+    p {
+        font-size: 1em;
+    }
+    .editor-container {
+        flex-direction: column; /* Stack editors vertically */
+        gap: 20px;
+    }
+    .editor {
+        width: 100%; /* Full width for stacked editors */
+    }
+    textarea {
+        min-height: 200px; /* Adjust textarea height for smaller screens */
+        font-size: 0.9em;
+    }
+    button {
+        padding: 10px 22px;
+        font-size: 1em;
+        width: 100%; /* Make button full width on small screens */
+    }
+}
+
+/* Further responsive adjustments for very small screens */
+@media (max-width: 480px) {
+    h1 {
+        font-size: 1.6em;
+    }
+    p {
+        font-size: 0.95em;
+    }
+    textarea {
+        min-height: 150px; /* Further adjust textarea height */
+    }
+}
