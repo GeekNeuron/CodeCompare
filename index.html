@@ -3,25 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CodeCompare</title>
+    <title>CodeCompare - Professional Code Comparison Tool</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <h1>CodeCompare</h1>
-        <p>Enter two code snippets below to compare them. This tool helps you easily see the differences between two pieces of text or code.</p>
-        <div class="editor-container">
-            <div class="editor">
-                <label for="code1">Code 1:</label>
-                <textarea id="code1" rows="15" placeholder="Paste your first code snippet here..."></textarea>
+        <header>
+            <div class="logo">
+                <i class="fas fa-code-branch"></i>
+                <h1>CodeCompare</h1>
             </div>
-            <div class="editor">
-                <label for="code2">Code 2:</label>
-                <textarea id="code2" rows="15" placeholder="Paste your second code snippet here..."></textarea>
+            <p class="subtitle">Professional Code Comparison Tool - GeekNeuron Edition</p>
+        </header>
+
+        <div class="controls">
+            <button class="btn" onclick="compareCode()">
+                <i class="fas fa-search"></i> Compare Code
+            </button>
+            <button class="btn btn-secondary" onclick="clearAll()">
+                <i class="fas fa-trash"></i> Clear All
+            </button>
+            <button class="btn btn-secondary" onclick="swapCode()">
+                <i class="fas fa-exchange-alt"></i> Swap Code
+            </button>
+        </div>
+
+        <div class="compare-container">
+            <div class="code-panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <i class="fas fa-file-code"></i>
+                        Original Code (Old)
+                    </div>
+                    <div class="line-numbers" id="leftLines">Lines: 0</div>
+                </div>
+                <textarea 
+                    class="code-input" 
+                    id="originalCode" 
+                    placeholder="Enter your original code here..."
+                    oninput="updateLineCount('originalCode', 'leftLines')"
+                ></textarea>
+            </div>
+
+            <div class="code-panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <i class="fas fa-file-code"></i>
+                        Modified Code (New)
+                    </div>
+                    <div class="line-numbers" id="rightLines">Lines: 0</div>
+                </div>
+                <textarea 
+                    class="code-input" 
+                    id="modifiedCode" 
+                    placeholder="Enter your modified code here..."
+                    oninput="updateLineCount('modifiedCode', 'rightLines')"
+                ></textarea>
             </div>
         </div>
-        <button id="compareBtn">Compare</button>
-        <div id="result">The comparison result will be displayed here.</div>
+
+        <div class="result-container">
+            <div class="result-header">
+                <div class="result-title">
+                    <i class="fas fa-chart-line"></i>
+                    Comparison Results
+                </div>
+                <div class="stats" id="stats" style="display: none;">
+                    <div class="stat added">
+                        <i class="fas fa-plus"></i>
+                        <span id="addedCount">0</span> Added
+                    </div>
+                    <div class="stat removed">
+                        <i class="fas fa-minus"></i>
+                        <span id="removedCount">0</span> Removed
+                    </div>
+                    <div class="stat modified">
+                        <i class="fas fa-edit"></i>
+                        <span id="modifiedCount">0</span> Modified
+                    </div>
+                </div>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Comparing code...</p>
+            </div>
+
+            <div class="empty-state" id="emptyState">
+                <i class="fas fa-code-branch"></i>
+                <h3>Ready to Compare</h3>
+                <p>Enter your code in the boxes above and click "Compare Code" to see the differences highlighted.</p>
+            </div>
+
+            <div class="diff-container" id="diffContainer" style="display: none;">
+                <div class="diff-side" id="leftSide"></div>
+                <div class="diff-side" id="rightSide"></div>
+            </div>
+
+            <div class="legend" id="legend" style="display: none;">
+                <div class="legend-item">
+                    <div class="legend-color added"></div>
+                    <span>Added Lines</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color removed"></div>
+                    <span>Removed Lines</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color modified"></div>
+                    <span>Modified Lines</span>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="script.js"></script>
