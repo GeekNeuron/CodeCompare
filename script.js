@@ -1,81 +1,100 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // DOM Elements
+    // --- DOM Elements ---
     const originalCodeEl = document.getElementById('original-code');
     const modifiedCodeEl = document.getElementById('modified-code');
     const compareBtn = document.getElementById('compare-btn');
+    const diffOutputContainer = document.getElementById('diff-output-container');
     const diffOutputEl = document.getElementById('diff-output');
-    const statsOutputEl = document.getElementById('stats-output');
     
-    // Settings
-    const themeSelect = document.getElementById('theme-select');
-    const themeLink = document.getElementById('prism-theme-link');
-    const langSearch = document.getElementById('language-search');
-    const langOptions = document.getElementById('language-options');
-    const pluginToggles = document.querySelectorAll('.switch-toggle input[data-plugin]');
+    // Line Counts
+    const originalLinesEl = document.getElementById('original-lines');
+    const modifiedLinesEl = document.getElementById('modified-lines');
 
-    // State
-    const appState = {
+    // Controls
+    const themeSelectWrapper = document.getElementById('theme-select-wrapper');
+    const themeSelectTrigger = themeSelectWrapper.querySelector('.custom-select-trigger');
+    const themeOptions = themeSelectWrapper.querySelectorAll('.custom-option');
+    const prismThemeLink = document.getElementById('prism-theme-link');
+
+    const langSearchInput = document.getElementById('language-search');
+    const langOptionsContainer = document.getElementById('language-options');
+    
+    // Plugin Toggles
+    const pluginToggles = document.querySelectorAll('.plugins-group .switch-toggle input');
+
+    // --- State ---
+    const state = {
         language: 'javascript',
         plugins: {
             'line-numbers': true,
+            'toolbar': true,
             'show-invisibles': false,
-            'autolinker': true,
-            'match-braces': true,
+            'autolinker': true
         }
     };
 
-    // --- INITIALIZATION ---
+    // --- Initialization ---
     function init() {
         setupEventListeners();
         populateLanguages();
         loadInitialCode();
+        updateLineCounts();
     }
 
-    // --- EVENT LISTENERS ---
     function setupEventListeners() {
         compareBtn.addEventListener('click', runComparison);
-        themeSelect.addEventListener('change', () => {
-            themeLink.href = `https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/${themeSelect.value}.min.css`;
+        originalCodeEl.addEventListener('input', updateLineCounts);
+        modifiedCodeEl.addEventListener('input', updateLineCounts);
+
+        // Custom theme select
+        themeSelectTrigger.addEventListener('click', () => themeSelectWrapper.classList.toggle('open'));
+        themeOptions.forEach(option => {
+            option.addEventListener('click', (e) => {
+                const selectedValue = e.target.dataset.value;
+                themeSelectTrigger.querySelector('span').textContent = e.target.textContent;
+                prismThemeLink.href = `https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/${selectedValue}.min.css`;
+                themeSelectWrapper.classList.remove('open');
+            });
         });
-        
-        // Language Search Logic
-        langSearch.addEventListener('input', filterLanguages);
-        langSearch.addEventListener('focus', () => langOptions.classList.add('visible'));
+
+        // Searchable language select
+        langSearchInput.addEventListener('input', filterLanguages);
+        langSearchInput.addEventListener('focus', () => langOptionsContainer.classList.add('visible'));
         document.addEventListener('click', (e) => {
-            if (!e.target.closest('.searchable-select')) {
-                langOptions.classList.remove('visible');
+            if (!e.target.closest('.searchable-select-wrapper')) {
+                langOptionsContainer.classList.remove('visible');
             }
         });
 
         // Plugin Toggles
         pluginToggles.forEach(toggle => {
-            toggle.addEventListener('change', (e) => {
-                const plugin = e.target.dataset.plugin;
-                appState.plugins[plugin] = e.target.checked;
-                runComparison(); // Re-run to apply plugin changes
+            toggle.addEventListener('change', () => {
+                const plugin = toggle.dataset.plugin;
+                state.plugins[plugin] = toggle.checked;
+                runComparison(); // Re-render when plugins change
             });
         });
     }
 
-    // --- CORE LOGIC ---
     function runComparison() {
+        diffOutputContainer.style.display = 'block'; // Show the output container
+        document.getElementById('comparison-container').style.display = 'none'; // Hide input textareas
+
         const originalText = originalCodeEl.value;
         const modifiedText = modifiedCodeEl.value;
 
-        const langDefinition = Prism.languages[appState.language] || Prism.languages.markup;
-        
         // Use diff-highlight format: a block of text with lines prefixed with +, -, or space
-        const combinedText = createDiffText(originalText, modifiedText);
+        const diffText = createDiffText(originalText, modifiedText);
         
-        // Apply classes for plugins
-        Object.keys(appState.plugins).forEach(plugin => {
-            diffOutputEl.classList.toggle(plugin, appState.plugins[plugin]);
+        diffOutputEl.textContent = diffText;
+        diffOutputEl.className = `language-diff-${state.language}`;
+
+        // Apply plugin classes to the <pre> element
+        Object.keys(state.plugins).forEach(plugin => {
+            diffOutputEl.classList.toggle(plugin, state.plugins[plugin]);
         });
         
-        const highlightedHtml = Prism.highlight(combinedText, Prism.languages.diff, `diff-${appState.language}`);
-        diffOutputEl.innerHTML = highlightedHtml;
-        
-        updateStats(combinedText);
+        Prism.highlightElement(diffOutputEl);
     }
     
     function createDiffText(text1, text2) {
@@ -86,7 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const lineArray = a.lineArray;
         const diffs = dmp.diff_main(lineText1, lineText2, false);
         dmp.diff_charsToLines_(diffs, lineArray);
-        
+
         let result = [];
         for (const [op, data] of diffs) {
             const lines = data.split('\n').filter(line => line !== '');
@@ -98,80 +117,52 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return result.join('\n');
     }
-
-    // --- UI & HELPERS ---
-    function updateStats(diffText) {
-        const added = (diffText.match(/^[+]/gm) || []).length;
-        const removed = (diffText.match(/^[-]/gm) || []).length;
-        statsOutputEl.innerHTML = `
-            <span class="added"><i class="fas fa-plus-circle"></i> ${added} added</span>
-            <span class="removed"><i class="fas fa-minus-circle"></i> ${removed} removed</span>
-        `;
-    }
     
     function populateLanguages() {
-        const friendlyNames = {
-            'javascript': 'JavaScript', 'typescript': 'TypeScript', 'python': 'Python', 'csharp': 'C#', 'cpp': 'C++',
-            'markup': 'HTML/XML', 'css': 'CSS', 'scss': 'SCSS', 'sql': 'SQL', 'bash': 'Bash Shell'
-        };
+        const friendlyNames = { 'javascript': 'JavaScript', 'typescript': 'TypeScript', 'python': 'Python', 'csharp': 'C#', 'cpp': 'C++', 'markup': 'HTML/XML', 'css': 'CSS', 'scss': 'SCSS', 'sql': 'SQL', 'bash': 'Bash Shell' };
 
         const languages = Object.keys(Prism.languages)
-            .filter(lang => typeof Prism.languages[lang] === 'object')
+            .filter(lang => typeof Prism.languages[lang] === 'object' && !Prism.languages[lang].alias)
             .sort((a, b) => (friendlyNames[a] || a).localeCompare(friendlyNames[b] || b));
         
-        langOptions.innerHTML = languages.map(lang =>
+        langOptionsContainer.innerHTML = languages.map(lang =>
             `<div data-lang="${lang}">${friendlyNames[lang] || lang}</div>`
         ).join('');
 
-        langOptions.querySelectorAll('div').forEach(el => {
+        langOptionsContainer.querySelectorAll('div').forEach(el => {
             el.addEventListener('click', () => {
                 const lang = el.dataset.lang;
-                appState.language = lang;
-                langSearch.value = el.textContent;
-                langOptions.classList.remove('visible');
-                runComparison();
+                state.language = lang;
+                langSearchInput.value = el.textContent;
+                langOptionsContainer.classList.remove('visible');
             });
         });
-
-        // Set initial value
-        langSearch.value = friendlyNames[appState.language];
+        langSearchInput.value = friendlyNames[state.language];
+    }
+    
+    function filterLanguages() {
+        const query = langSearchInput.value.toLowerCase();
+        langOptionsContainer.querySelectorAll('div').forEach(option => {
+            option.style.display = option.textContent.toLowerCase().includes(query) ? 'block' : 'none';
+        });
     }
 
-    function filterLanguages() {
-        const query = langSearch.value.toLowerCase();
-        langOptions.querySelectorAll('div').forEach(option => {
-            option.style.display = option.textContent.toLowerCase().includes(query) ? '' : 'none';
-        });
+    function updateLineCounts() {
+        originalLinesEl.textContent = `Lines: ${originalCodeEl.value.split('\n').length}`;
+        modifiedLinesEl.textContent = `Lines: ${modifiedCodeEl.value.split('\n').length}`;
     }
 
     function loadInitialCode() {
-        originalCodeEl.value = `// The default export of \`netlify-plugin-nextjs\`
-module.exports = {
-  onBuild() {
-    // commands to run build
-  },
-  async onPostBuild() {
-    console.log("Next.js build is complete!");
-  }
+        originalCodeEl.value = `// Original Welcome Function
+function welcome(name) {
+  return "Hello, " + name;
+}`;
+        modifiedCodeEl.value = `// Updated Welcome Function with ES6
+const welcome = (name) => {
+  // A more personal greeting
+  return \`Greetings, \${name}!\`;
 };`;
-
-        modifiedCodeEl.value = `// The default export of \`netlify-plugin-nextjs\`
-module.exports = {
-  onPreBuild() {
-    // commands to run before the build
-    console.log("Starting Next.js build...");
-  },
-  onBuild() {
-    // commands to run build
-  },
-  async onPostBuild() {
-    console.log("Next.js build is complete!");
-    await restoreCache({ cacheDir: '.next/cache' });
-  }
-};`;
-        runComparison();
     }
 
-    // Start the app
     init();
 });
