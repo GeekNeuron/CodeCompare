@@ -3,14 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CodeCompare Pro - Professional Diff Tool</title>
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" id="prism-theme">
+    <title>CodeCompare Pro - Advanced Diff Tool</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" id="prism-theme">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/diff-highlight/prism-diff-highlight.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/command-line/prism-command-line.min.css">
     
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
 
@@ -20,98 +23,95 @@
                 <h1>CodeCompare</h1>
                 <span>by GeekNeuron</span>
             </div>
-            <div class="repo-link">
-                <a href="https://github.com/GeekNeuron/CodeCompare" target="_blank">View on GitHub</a>
+            <div class="header-controls">
+                <button id="settings-btn" class="icon-btn" title="Settings"><i class="fas fa-cog"></i></button>
             </div>
         </header>
 
-        <div class="controls-panel">
-            <div class="control-section">
-                <span class="control-label">View Options</span>
-                <div class="control-group">
-                    <div class="custom-select-wrapper">
-                        <div class="custom-select">
-                            <div class="custom-select-trigger"><span>Tomorrow Night</span></div>
-                            <div class="custom-options">
-                                <span class="custom-option" data-value="prism-tomorrow">Tomorrow Night</span>
-                                <span class="custom-option" data-value="prism-okaidia">Okaidia</span>
-                                <span class="custom-option" data-value="prism-solarizedlight">Solarized Light</span>
-                                <span class="custom-option" data-value="prism-twilight">Twilight</span>
-                                <span class="custom-option" data-value="prism-coy">Coy</span>
-                                <span class="custom-option" data-value="prism-dark">Dark</span>
-                                <span class="custom-option" data-value="prism">Default</span>
-                            </div>
-                        </div>
-                    </div>
+        <main id="comparison-container">
+            <div class="code-view">
+                <div class="code-header">
+                    <span>Original Code</span>
+                    <span id="original-lines">Lines: 0</span>
+                </div>
+                <div class="code-wrapper">
+                    <pre id="original-output" class="line-numbers diff-highlight"></pre>
+                    <textarea id="original-code" class="code-input" spellcheck="false" placeholder="Paste original code here..."></textarea>
                 </div>
             </div>
-
-            <div class="control-section">
-                 <span class="control-label">Plugins & Settings</span>
-                 <div class="control-group">
-                    <label class="switch-toggle">
-                        <input type="checkbox" id="line-numbers-toggle" checked>
-                        <span class="slider"></span>
-                        Line Numbers
-                    </label>
-                    <label class="switch-toggle">
-                        <input type="checkbox" id="copy-btn-toggle" checked>
-                        <span class="slider"></span>
-                        Copy Button
-                    </label>
-                 </div>
-            </div>
-            
-            <div class="control-section view-mode-section">
-                <span class="control-label">Display Mode</span>
-                <div class="view-mode-toggle">
-                    <button class="mode-btn active" data-mode="side-by-side">Side-by-Side</button>
-                    <button class="mode-btn" data-mode="inline">Inline</button>
+            <div class="code-view">
+                <div class="code-header">
+                    <span>Modified Code</span>
+                    <span id="modified-lines">Lines: 0</span>
                 </div>
-            </div>
-
-            <button id="compare-btn" class="compare-button">Compare</button>
-        </div>
-
-        <main id="comparison-container" class="side-by-side">
-            <div class="diff-view side-by-side-view">
-                <div class="code-panel">
-                    <div class="code-header">
-                        <span>Original Code</span>
-                        <span id="original-lines">Lines: 0</span>
-                    </div>
-                    <textarea id="original-code" class="code-input" spellcheck="false"></textarea>
-                </div>
-                <div class="code-panel">
-                    <div class="code-header">
-                        <span>Modified Code</span>
-                        <span id="modified-lines">Lines: 0</span>
-                    </div>
-                    <textarea id="modified-code" class="code-input" spellcheck="false"></textarea>
-                </div>
-            </div>
-
-            <div class="diff-view inline-view">
-                 <div class="code-panel">
-                    <div class="code-header">
-                        <span>Unified Diff</span>
-                        <div id="inline-stats" class="inline-stats-display"></div>
-                    </div>
-                    <pre id="inline-output" class="language-diff-js diff-highlight"><code></code></pre>
+                <div class="code-wrapper">
+                    <pre id="modified-output" class="line-numbers diff-highlight"></pre>
+                    <textarea id="modified-code" class="code-input" spellcheck="false" placeholder="Paste modified code here..."></textarea>
                 </div>
             </div>
         </main>
+        
+        <div class="main-actions">
+            <button id="compare-btn" class="compare-button">Compare Code</button>
+        </div>
+
+        <div id="comparison-stats" class="stats-container">
+             </div>
+
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/diff-highlight/prism-diff-highlight.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/copy-to-clipboard/prism-copy-to-clipboard.min.js"></script>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js"></script>
+    <div id="settings-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Settings</h2>
+                <button id="close-modal-btn" class="icon-btn close-btn"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-group">
+                    <h3>Appearance</h3>
+                    <div class="setting-item">
+                        <label for="theme-select">Theme</label>
+                        <select id="theme-select">
+                            <option value="prism-okaidia">Okaidia</option>
+                            <option value="prism-tomorrow">Tomorrow Night</option>
+                            <option value="prism-coy">Coy</option>
+                            <option value="prism-solarizedlight">Solarized Light</option>
+                            <option value="prism-twilight">Twilight</option>
+                            <option value="prism-dark">Dark</option>
+                            <option value="prism">Default</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="setting-group">
+                    <h3>Language</h3>
+                     <div class="setting-item">
+                        <label for="language-select-search">Comparison Language</label>
+                        <div class="searchable-select">
+                            <input type="text" id="language-select-search" placeholder="Search for a language...">
+                            <div class="language-options">
+                                </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="setting-group">
+                    <h3>Plugins</h3>
+                    <div class="plugins-grid">
+                        <label class="switch-toggle"><input type="checkbox" data-plugin="line-numbers" checked><span></span>Line Numbers</label>
+                        <label class="switch-toggle"><input type="checkbox" data-plugin="show-invisibles"><span></span>Show Invisibles</label>
+                        <label class="switch-toggle"><input type="checkbox" data-plugin="autolinker" checked><span></span>Autolinker</p></label>
+                        <label class="switch-toggle"><input type="checkbox" data-plugin="toolbar" checked><span></span>Toolbar</label>
+                        <label class="switch-toggle"><input type="checkbox" data-plugin="copy-to-clipboard" checked><span></span>Copy Button</label>
+                        <label class="switch-toggle"><input type="checkbox" data-plugin="download-button"><span></span>Download Button</label>
+                        <label class="switch-toggle"><input type="checkbox" data-plugin="match-braces" checked><span></span>Match Braces</label>
+                        <label class="switch-toggle"><input type="checkbox" data-plugin="show-language"><span></span>Show Language</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
+    <script src="prism.js"></script>
+    
     <script src="script.js"></script>
 
 </body>
