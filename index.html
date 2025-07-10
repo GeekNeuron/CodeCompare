@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=1200">
-    <title>CodeCompare Pro - Final Version</title>
+    <title>CodeCompare Pro - Final & Complete Version</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" id="prism-theme-link">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css">
@@ -13,20 +13,16 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/match-braces/prism-match-braces.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/inline-color/prism-inline-color.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/command-line/prism-command-line.min.css">
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/previewers/prism-previewers.min.css">
+    
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&family=Fira+Code&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="container">
         <header class="main-header" id="theme-switcher" title="Click to switch theme">
-            <div class="logo">
-                <h1>CodeCompare</h1>
-                <span>by GeekNeuron</span>
-            </div>
-            <div class="repo-link">
-                <a href="https://github.com/GeekNeuron/CodeCompare" target="_blank">View on GitHub</a>
-            </div>
+            <div class="logo"><h1>CodeCompare</h1><span>by GeekNeuron</span></div>
+            <div class="repo-link"><a href="https://github.com/GeekNeuron/CodeCompare" target="_blank">View on GitHub</a></div>
         </header>
 
         <div class="controls-panel">
@@ -37,55 +33,42 @@
                     <div class="searchable-options" id="language-options"></div>
                 </div>
             </div>
-
-            <div class="control-section">
+            
+            <div class="control-section plugins-section">
                  <span class="control-label">Plugins:</span>
                  <div class="control-group plugins-group">
                     <label class="switch-toggle"><input type="checkbox" data-plugin="line-numbers" checked> <span class="slider"></span>Line Numbers</label>
                     <label class="switch-toggle"><input type="checkbox" data-plugin="show-invisibles"> <span class="slider"></span>Show Invisibles</label>
                     <label class="switch-toggle"><input type="checkbox" data-plugin="autolinker" checked> <span class="slider"></span>Autolinker</label>
+                    <label class="switch-toggle"><input type="checkbox" data-plugin="wpd"> <span class="slider"></span>WPD Links</label>
                     <label class="switch-toggle"><input type="checkbox" data-plugin="match-braces" checked> <span class="slider"></span>Match Braces</label>
                     <label class="switch-toggle"><input type="checkbox" data-plugin="inline-color"> <span class="slider"></span>Inline Color</label>
+                    <label class="switch-toggle"><input type="checkbox" data-plugin="previewers" checked> <span class="slider"></span>CSS Previewers</label>
                     <label class="switch-toggle"><input type="checkbox" data-plugin="command-line"> <span class="slider"></span>Command Line</label>
                     <label class="switch-toggle" id="toolbar-toggle-wrapper"><input type="checkbox" data-plugin="toolbar" checked> <span class="slider"></span>Toolbar</label>
-                    <label class="switch-toggle sub-plugin"><input type="checkbox" data-plugin="copy-to-clipboard" checked> <span class="slider"></span>Copy Button</label>
-                    <label class="switch-toggle sub-plugin"><input type="checkbox" data-plugin="download-button" checked> <span class="slider"></span>Download Button</label>
-                    <label class="switch-toggle sub-plugin"><input type="checkbox" data-plugin="show-language"> <span class="slider"></span>Show Language</label>
                  </div>
+            </div>
+            <div class="control-section process-section">
+                <span class="control-label">Processing:</span>
+                <div class="control-group">
+                    <label class="switch-toggle"><input type="checkbox" data-plugin="normalize-whitespace"> <span class="slider"></span>Ignore Whitespace</label>
+                </div>
             </div>
         </div>
         
         <main id="comparison-container">
             <div class="input-panels">
-                <div class="code-panel">
-                    <div class="code-header">
-                        <span>Original Code</span>
-                        <span id="original-lines">Lines: 0</span>
-                    </div>
-                    <textarea id="original-code" class="code-input" spellcheck="false"></textarea>
-                </div>
-                <div class="code-panel">
-                    <div class="code-header">
-                        <span>Modified Code</span>
-                        <span id="modified-lines">Lines: 0</span>
-                    </div>
-                    <textarea id="modified-code" class="code-input" spellcheck="false"></textarea>
-                </div>
+                <div class="code-panel"><div class="code-header"><span>Original Code</span><span id="original-lines">Lines: 0</span></div><textarea id="original-code" spellcheck="false"></textarea></div>
+                <div class="code-panel"><div class="code-header"><span>Modified Code</span><span id="modified-lines">Lines: 0</span></div><textarea id="modified-code" spellcheck="false"></textarea></div>
             </div>
-            <div class="action-footer">
-                 <button id="compare-btn" class="compare-button">Compare</button>
-            </div>
+            <div class="action-footer"><button id="compare-btn" class="compare-button">Compare</button></div>
         </main>
         
-        <div id="diff-output-container" style="display: none;">
-            <pre id="diff-output" data-user="geekneuron" data-host="codecompare"></pre>
-        </div>
+        <div id="diff-output-container" style="display: none;"><pre id="diff-output" data-user="geekneuron" data-host="codecompare"></pre></div>
     </div>
 
     <script src="lib/prism.js"></script>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js"></script>
-
     <script src="script.js"></script>
 </body>
 </html>
