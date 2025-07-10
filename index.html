@@ -2,24 +2,24 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CodeCompare Pro - Professional Diff Tool</title>
+    <meta name="viewport" content="width=1200">
+    <title>CodeCompare Pro - Final Version</title>
     
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" id="prism-theme-link">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" id="prism-theme-link">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/diff-highlight/prism-diff-highlight.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/show-invisibles/prism-show-invisibles.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/command-line/prism-command-line.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/match-braces/prism-match-braces.min.css">
-    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/inline-color/prism-inline-color.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/command-line/prism-command-line.min.css">
+
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&family=Fira+Code&display=swap" rel="stylesheet">
 </head>
 <body>
-
     <div class="container">
-        <header class="main-header">
+        <header class="main-header" id="theme-switcher" title="Click to switch theme">
             <div class="logo">
                 <h1>CodeCompare</h1>
                 <span>by GeekNeuron</span>
@@ -31,51 +31,32 @@
 
         <div class="controls-panel">
             <div class="control-section">
-                <span class="control-label">Language</span>
-                <div class="control-group">
-                    <div class="searchable-select-wrapper">
-                        <input type="text" id="language-search" placeholder="Search language..." autocomplete="off">
-                        <div class="searchable-options" id="language-options">
-                            </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="control-section">
-                <span class="control-label">Theme</span>
-                <div class="control-group">
-                     <div class="custom-select-wrapper">
-                        <div class="custom-select" id="theme-select-wrapper">
-                            <div class="custom-select-trigger"><span>Tomorrow Night</span></div>
-                            <div class="custom-options">
-                                <span class="custom-option" data-value="prism-tomorrow">Tomorrow Night</span>
-                                <span class="custom-option" data-value="prism-okaidia">Okaidia</span>
-                                <span class="custom-option" data-value="prism-solarizedlight">Solarized Light</span>
-                                <span class="custom-option" data-value="prism-twilight">Twilight</span>
-                                <span class="custom-option" data-value="prism-coy">Coy</span>
-                                <span class="custom-option" data-value="prism-dark">Dark</span>
-                                <span class="custom-option" data-value="prism">Default</span>
-                            </div>
-                        </div>
-                    </div>
+                <span class="control-label">Language:</span>
+                <div class="searchable-select-wrapper">
+                    <input type="text" id="language-search" placeholder="Search language..." autocomplete="off">
+                    <div class="searchable-options" id="language-options"></div>
                 </div>
             </div>
 
             <div class="control-section">
-                 <span class="control-label">Plugins & Settings</span>
+                 <span class="control-label">Plugins:</span>
                  <div class="control-group plugins-group">
-                    <label class="switch-toggle" title="Show Line Numbers"><input type="checkbox" data-plugin="line-numbers" checked> <span class="slider"></span>Line Numbers</label>
-                    <label class="switch-toggle" title="Show invisible characters like tabs and newlines"><input type="checkbox" data-plugin="show-invisibles"> <span class="slider"></span>Invisibles</label>
-                    <label class="switch-toggle" title="Enable clickable links for URLs"><input type="checkbox" data-plugin="autolinker" checked> <span class="slider"></span>Autolinker</label>
-                    <label class="switch-toggle" title="Show copy-to-clipboard and download buttons"><input type="checkbox" data-plugin="toolbar" checked> <span class="slider"></span>Toolbar</label>
+                    <label class="switch-toggle"><input type="checkbox" data-plugin="line-numbers" checked> <span class="slider"></span>Line Numbers</label>
+                    <label class="switch-toggle"><input type="checkbox" data-plugin="show-invisibles"> <span class="slider"></span>Show Invisibles</label>
+                    <label class="switch-toggle"><input type="checkbox" data-plugin="autolinker" checked> <span class="slider"></span>Autolinker</label>
+                    <label class="switch-toggle"><input type="checkbox" data-plugin="match-braces" checked> <span class="slider"></span>Match Braces</label>
+                    <label class="switch-toggle"><input type="checkbox" data-plugin="inline-color"> <span class="slider"></span>Inline Color</label>
+                    <label class="switch-toggle"><input type="checkbox" data-plugin="command-line"> <span class="slider"></span>Command Line</label>
+                    <label class="switch-toggle" id="toolbar-toggle-wrapper"><input type="checkbox" data-plugin="toolbar" checked> <span class="slider"></span>Toolbar</label>
+                    <label class="switch-toggle sub-plugin"><input type="checkbox" data-plugin="copy-to-clipboard" checked> <span class="slider"></span>Copy Button</label>
+                    <label class="switch-toggle sub-plugin"><input type="checkbox" data-plugin="download-button" checked> <span class="slider"></span>Download Button</label>
+                    <label class="switch-toggle sub-plugin"><input type="checkbox" data-plugin="show-language"> <span class="slider"></span>Show Language</label>
                  </div>
             </div>
-
-            <button id="compare-btn" class="compare-button">Compare</button>
         </div>
-
+        
         <main id="comparison-container">
-            <div class="diff-view">
+            <div class="input-panels">
                 <div class="code-panel">
                     <div class="code-header">
                         <span>Original Code</span>
@@ -91,12 +72,14 @@
                     <textarea id="modified-code" class="code-input" spellcheck="false"></textarea>
                 </div>
             </div>
+            <div class="action-footer">
+                 <button id="compare-btn" class="compare-button">Compare</button>
+            </div>
         </main>
-
+        
         <div id="diff-output-container" style="display: none;">
-            <pre id="diff-output"></pre>
+            <pre id="diff-output" data-user="geekneuron" data-host="codecompare"></pre>
         </div>
-
     </div>
 
     <script src="lib/prism.js"></script>
