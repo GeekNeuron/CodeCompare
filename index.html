@@ -3,78 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CodeCompare :: Professional Diff Tool</title>
+    <title>CodeCompare Pro - Professional Diff Tool</title>
     
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" id="prism-theme-link">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" id="prism-theme-link">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/diff-highlight/prism-diff-highlight.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/match-braces/prism-match-braces.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/show-invisibles/prism-show-invisibles.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/command-line/prism-command-line.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/match-braces/prism-match-braces.min.css">
     
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600&family=Fira+Code&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
+
     <div class="container">
-        <aside class="sidebar">
+        <header class="main-header">
             <div class="logo">
-                <h2>CodeCompare</h2>
+                <h1>CodeCompare</h1>
                 <span>by GeekNeuron</span>
             </div>
-            <div class="settings-panel">
-                <h3><i class="fas fa-language"></i> Language</h3>
-                <div class="searchable-select">
-                    <input type="text" id="language-search" placeholder="Search language...">
-                    <div class="language-options" id="language-options"></div>
-                </div>
-
-                <h3><i class="fas fa-cogs"></i> Options</h3>
-                <div class="options-grid">
-                    <label class="switch-toggle"><input type="checkbox" data-plugin="line-numbers" checked><span></span>Line Numbers</label>
-                    <label class="switch-toggle"><input type="checkbox" data-plugin="show-invisibles"><span></span>Show Invisibles</label>
-                    <label class="switch-toggle"><input type="checkbox" data-plugin="autolinker" checked><span></span>Autolinker</label>
-                    <label class="switch-toggle"><input type="checkbox" data-plugin="match-braces" checked><span></span>Match Braces</label>
-                </div>
-
-                <h3><i class="fas fa-swatchbook"></i> Theme</h3>
-                <select id="theme-select">
-                    <option value="prism-okaidia">Okaidia</option>
-                    <option value="prism-tomorrow">Tomorrow Night</option>
-                    <option value="prism-coy">Coy</option>
-                    <option value="prism-solarizedlight">Solarized Light</option>
-                    <option value="prism-twilight">Twilight</option>
-                    <option value="prism-dark">Dark</option>
-                    <option value="prism">Default</option>
-                </select>
-            </div>
-             <footer class="sidebar-footer">
+            <div class="repo-link">
                 <a href="https://github.com/GeekNeuron/CodeCompare" target="_blank">View on GitHub</a>
-            </footer>
-        </aside>
+            </div>
+        </header>
 
-        <main class="main-content">
-            <div class="input-area">
-                <div class="code-pane">
-                    <textarea id="original-code" spellcheck="false" placeholder="Original Code"></textarea>
-                </div>
-                <div class="code-pane">
-                    <textarea id="modified-code" spellcheck="false" placeholder="Modified Code"></textarea>
+        <div class="controls-panel">
+            <div class="control-section">
+                <span class="control-label">Language</span>
+                <div class="control-group">
+                    <div class="searchable-select-wrapper">
+                        <input type="text" id="language-search" placeholder="Search language..." autocomplete="off">
+                        <div class="searchable-options" id="language-options">
+                            </div>
+                    </div>
                 </div>
             </div>
-            <div class="action-bar">
-                <button id="compare-btn" class="compare-button"><i class="fas fa-exchange-alt"></i> Compare</button>
-                <div id="stats-output" class="stats-output"></div>
+            
+            <div class="control-section">
+                <span class="control-label">Theme</span>
+                <div class="control-group">
+                     <div class="custom-select-wrapper">
+                        <div class="custom-select" id="theme-select-wrapper">
+                            <div class="custom-select-trigger"><span>Tomorrow Night</span></div>
+                            <div class="custom-options">
+                                <span class="custom-option" data-value="prism-tomorrow">Tomorrow Night</span>
+                                <span class="custom-option" data-value="prism-okaidia">Okaidia</span>
+                                <span class="custom-option" data-value="prism-solarizedlight">Solarized Light</span>
+                                <span class="custom-option" data-value="prism-twilight">Twilight</span>
+                                <span class="custom-option" data-value="prism-coy">Coy</span>
+                                <span class="custom-option" data-value="prism-dark">Dark</span>
+                                <span class="custom-option" data-value="prism">Default</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="diff-area">
-                <pre id="diff-output"></pre>
+
+            <div class="control-section">
+                 <span class="control-label">Plugins & Settings</span>
+                 <div class="control-group plugins-group">
+                    <label class="switch-toggle" title="Show Line Numbers"><input type="checkbox" data-plugin="line-numbers" checked> <span class="slider"></span>Line Numbers</label>
+                    <label class="switch-toggle" title="Show invisible characters like tabs and newlines"><input type="checkbox" data-plugin="show-invisibles"> <span class="slider"></span>Invisibles</label>
+                    <label class="switch-toggle" title="Enable clickable links for URLs"><input type="checkbox" data-plugin="autolinker" checked> <span class="slider"></span>Autolinker</label>
+                    <label class="switch-toggle" title="Show copy-to-clipboard and download buttons"><input type="checkbox" data-plugin="toolbar" checked> <span class="slider"></span>Toolbar</label>
+                 </div>
+            </div>
+
+            <button id="compare-btn" class="compare-button">Compare</button>
+        </div>
+
+        <main id="comparison-container">
+            <div class="diff-view">
+                <div class="code-panel">
+                    <div class="code-header">
+                        <span>Original Code</span>
+                        <span id="original-lines">Lines: 0</span>
+                    </div>
+                    <textarea id="original-code" class="code-input" spellcheck="false"></textarea>
+                </div>
+                <div class="code-panel">
+                    <div class="code-header">
+                        <span>Modified Code</span>
+                        <span id="modified-lines">Lines: 0</span>
+                    </div>
+                    <textarea id="modified-code" class="code-input" spellcheck="false"></textarea>
+                </div>
             </div>
         </main>
+
+        <div id="diff-output-container" style="display: none;">
+            <pre id="diff-output"></pre>
+        </div>
+
     </div>
 
     <script src="lib/prism.js"></script>
-    
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js"></script>
+
     <script src="script.js"></script>
 </body>
 </html>
