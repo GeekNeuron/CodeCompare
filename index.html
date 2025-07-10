@@ -3,121 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CodeCompare - Professional Code Comparison Tool</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <title>CodeCompare - Advanced Code Comparison Tool</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" id="prism-theme">
     <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="container">
         <header>
-            <div class="logo">
-                <i class="fas fa-code-branch"></i>
-                <h1>CodeCompare</h1>
-            </div>
-            <p class="subtitle">Professional Code Comparison Tool - GeekNeuron Edition</p>
+            <h1>CodeCompare</h1>
+            <p>A modern tool for comparing code files and highlighting differences.</p>
         </header>
 
         <div class="controls">
-            <button class="btn" onclick="compareCode()">
-                <i class="fas fa-search"></i> Compare Code
-            </button>
-            <button class="btn btn-secondary" onclick="clearAll()">
-                <i class="fas fa-trash"></i> Clear All
-            </button>
-            <button class="btn btn-secondary" onclick="swapCode()">
-                <i class="fas fa-exchange-alt"></i> Swap Code
-            </button>
+            <div class="control-group">
+                <label for="theme-select">Theme:</label>
+                <select id="theme-select">
+                    <option value="prism-tomorrow">Tomorrow Night</option>
+                    <option value="prism-okaidia">Okaidia</option>
+                    <option value="prism-coy">Coy</option>
+                    <option value="prism-solarizedlight">Solarized Light</option>
+                    <option value="prism-twilight">Twilight</option>
+                    <option value="prism-dark">Dark</option>
+                    <option value="prism">Default</option>
+                </select>
+            </div>
+            <button id="compare-btn">Compare Files</button>
         </div>
 
-        <div class="compare-container">
-            <div class="code-panel">
-                <div class="panel-header">
-                    <div class="panel-title">
-                        <i class="fas fa-file-code"></i>
-                        Original Code (Old)
-                    </div>
-                    <div class="line-numbers" id="leftLines">Lines: 0</div>
-                </div>
-                <textarea 
-                    class="code-input" 
-                    id="originalCode" 
-                    placeholder="Enter your original code here..."
-                    oninput="updateLineCount('originalCode', 'leftLines')"
-                ></textarea>
+        <div id="comparison-stats" class="stats-container">
+            <div class="stat-item added">
+                <span class="label">Added</span>
+                <span id="added-count" class="count">0</span>
             </div>
-
-            <div class="code-panel">
-                <div class="panel-header">
-                    <div class="panel-title">
-                        <i class="fas fa-file-code"></i>
-                        Modified Code (New)
-                    </div>
-                    <div class="line-numbers" id="rightLines">Lines: 0</div>
-                </div>
-                <textarea 
-                    class="code-input" 
-                    id="modifiedCode" 
-                    placeholder="Enter your modified code here..."
-                    oninput="updateLineCount('modifiedCode', 'rightLines')"
-                ></textarea>
+            <div class="stat-item removed">
+                <span class="label">Removed</span>
+                <span id="removed-count" class="count">0</span>
+            </div>
+            <div class="stat-item modified">
+                <span class="label">Modified</span>
+                <span id="modified-count" class="count">0</span>
             </div>
         </div>
 
-        <div class="result-container">
-            <div class="result-header">
-                <div class="result-title">
-                    <i class="fas fa-chart-line"></i>
-                    Comparison Results
+        <main class="comparison-grid">
+            <div class="code-container">
+                <div class="code-header">
+                    <span>Original Code</span>
+                    <span id="original-lines">Lines: 0</span>
                 </div>
-                <div class="stats" id="stats" style="display: none;">
-                    <div class="stat added">
-                        <i class="fas fa-plus"></i>
-                        <span id="addedCount">0</span> Added
-                    </div>
-                    <div class="stat removed">
-                        <i class="fas fa-minus"></i>
-                        <span id="removedCount">0</span> Removed
-                    </div>
-                    <div class="stat modified">
-                        <i class="fas fa-edit"></i>
-                        <span id="modifiedCount">0</span> Modified
-                    </div>
-                </div>
+                <textarea id="original-code" class="code-input" spellcheck="false" placeholder="Paste your original code here..."></textarea>
+                <pre id="original-output" class="code-output language-diff"></pre>
             </div>
+            <div class="code-container">
+                <div class="code-header">
+                    <span>Modified Code</span>
+                    <span id="modified-lines">Lines: 0</span>
+                </div>
+                <textarea id="modified-code" class="code-input" spellcheck="false" placeholder="Paste your modified code here..."></textarea>
+                <pre id="modified-output" class="code-output language-diff"></pre>
+            </div>
+        </main>
 
-            <div class="loading" id="loading">
-                <div class="spinner"></div>
-                <p>Comparing code...</p>
-            </div>
-
-            <div class="empty-state" id="emptyState">
-                <i class="fas fa-code-branch"></i>
-                <h3>Ready to Compare</h3>
-                <p>Enter your code in the boxes above and click "Compare Code" to see the differences highlighted.</p>
-            </div>
-
-            <div class="diff-container" id="diffContainer" style="display: none;">
-                <div class="diff-side" id="leftSide"></div>
-                <div class="diff-side" id="rightSide"></div>
-            </div>
-
-            <div class="legend" id="legend" style="display: none;">
-                <div class="legend-item">
-                    <div class="legend-color added"></div>
-                    <span>Added Lines</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color removed"></div>
-                    <span>Removed Lines</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color modified"></div>
-                    <span>Modified Lines</span>
-                </div>
-            </div>
-        </div>
+        <footer>
+            <p>Created by <a href="https://github.com/GeekNeuron" target="_blank">GeekNeuron</a> | Powered by <a href="https://prismjs.com" target="_blank">Prism.js</a></p>
+        </footer>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/diff-highlight/prism-diff-highlight.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
