@@ -1,0 +1,24 @@
+{
+  "name": "CodeCompare Pro",
+  "short_name": "CodeCompare",
+  "description": "Compare two snippets of code or text and view a syntax-highlighted, line-by-line diff.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#191c21",
+  "theme_color": "#21252b",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
