@@ -9,6 +9,7 @@
     --accent-primary: #61afef;
     --accent-green: #98c379;
     --accent-red: #e06c75;
+    --line-divider: rgba(255, 255, 255, 0.07);
     --radius-m: 8px;
     --radius-l: 12px;
     --transition: 0.25s cubic-bezier(0.65, 0, 0.35, 1);
@@ -21,6 +22,7 @@ body.light-theme {
     --text-primary: #2c313a;
     --text-secondary: #5c6370;
     --border-color: #d7dbe0;
+    --line-divider: rgba(0, 0, 0, 0.06);
 }
 body.light-theme .logo h1 { color: #1a1d21; }
 body {
@@ -104,7 +106,7 @@ body.light-theme .logo span { color: var(--text-secondary); }
 .input-panels { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
 .code-panel { background-color: var(--bg-input); border-radius: var(--radius-m); border: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden; height: 50vh; }
 .code-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background-color: var(--bg-header); border-bottom: 1px solid var(--border-color); font-weight: 600; font-size: 14px; }
-.code-header-actions { display: flex; align-items: center; gap: 12px; font-weight: 400; }
+.code-header-actions { display: flex; align-items: center; gap: 12px; font-weight: 400; flex-wrap: wrap; }
 .upload-btn {
     background: transparent; border: 1px solid var(--border-color); color: var(--text-secondary);
     border-radius: var(--radius-m); padding: 4px 10px; font-size: 12px; cursor: pointer;
@@ -123,43 +125,39 @@ body.light-theme .logo span { color: var(--text-secondary); }
 .format-json-status.format-json-error { color: var(--accent-red); }
 
 #diff-output-container { padding: 24px; display: none; }
-#diff-output { font-family: 'Fira Code', monospace; font-size: 14px; direction: ltr; text-align: left; overflow-x: auto; max-width: 100%; display: block; }
-.diff-output-chunks pre { overflow-x: auto; max-width: 100%; }
+
+.diff-output-lines { direction: ltr; text-align: left; overflow-x: auto; max-width: 100%; font-family: 'Fira Code', monospace; font-size: 14px; line-height: 1.6; }
+.unified-line { display: flex; box-sizing: border-box; border-bottom: 1px solid var(--line-divider); }
+.diff-output-lines .unified-line:last-child { border-bottom: none; }
+.unified-line-num { flex: 0 0 auto; width: 42px; padding: 0 10px; text-align: right; color: var(--text-secondary); opacity: 0.5; user-select: none; border-right: 1px solid var(--border-color); }
+.unified-line-prefix { flex: 0 0 auto; width: 22px; text-align: center; user-select: none; font-weight: 700; }
+.unified-line-code { padding: 0 10px; flex: 1 1 auto; }
+.unified-line.type-added { background-color: rgba(152, 195, 121, 0.18); border-inline-start: 3px solid var(--accent-green); }
+.unified-line.type-added .unified-line-prefix { color: var(--accent-green); }
+.unified-line.type-removed { background-color: rgba(224, 108, 117, 0.18); border-inline-start: 3px solid var(--accent-red); }
+.unified-line.type-removed .unified-line-prefix { color: var(--accent-red); }
+.unified-line.type-unchanged { border-inline-start: 3px solid transparent; }
 
 /* Default (wrap off): long lines scroll horizontally within their own box, never the page. */
-#diff-output-container:not(.wrap-lines) #diff-output,
-#diff-output-container:not(.wrap-lines) .diff-output-chunks pre {
-    white-space: pre;
-}
+#diff-output-container:not(.wrap-lines) .unified-line-code,
 #diff-output-container:not(.wrap-lines) .split-line-code {
     white-space: pre;
 }
 
 /* Wrap on: long lines break onto multiple visual lines instead of scrolling. */
-#diff-output-container.wrap-lines #diff-output,
-#diff-output-container.wrap-lines .diff-output-chunks pre {
-    white-space: pre-wrap;
-    word-break: break-word;
-    overflow-wrap: anywhere;
-}
+#diff-output-container.wrap-lines .unified-line-code,
 #diff-output-container.wrap-lines .split-line-code {
     white-space: pre-wrap;
     word-break: break-word;
     overflow-wrap: anywhere;
 }
-pre[class*="language-"].diff-highlight { background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-m); }
-.token.inserted { background-color: rgba(152, 195, 121, 0.18); display: block; border-inline-start: 3px solid var(--accent-green); padding-inline-start: 8px; margin-inline-start: -8px; }
-.token.deleted { background-color: rgba(224, 108, 117, 0.18); display: block; border-inline-start: 3px solid var(--accent-red); padding-inline-start: 8px; margin-inline-start: -8px; }
-.line-numbers .line-numbers-rows { border-right: 1px solid var(--border-color) !important; opacity: 0.5; }
-div.code-toolbar > .toolbar { opacity: 0; transition: var(--transition); }
-div.code-toolbar:hover > .toolbar { opacity: 1; }
 
 .secondary-button { background-color: transparent; color: var(--text-primary); border: 1px solid var(--border-color); box-sizing: border-box; }
 .secondary-button:hover { background-color: rgba(255,255,255,0.05); transform: none; }
 
 .diff-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; text-align: left; }
 .diff-stats { font-size: 13px; color: var(--text-secondary); font-weight: 600; }
-.diff-actions { display: flex; gap: 10px; align-items: center; }
+.diff-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .diff-actions .compare-button { padding: 8px 16px; font-size: 13px; }
 
 .view-toggle { display: flex; border: 1px solid var(--border-color); border-radius: var(--radius-m); overflow: hidden; }
@@ -171,8 +169,16 @@ div.code-toolbar:hover > .toolbar { opacity: 1; }
 
 .collapse-toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); cursor: pointer; }
 
-.diff-output-chunks { direction: ltr; text-align: left; }
-.diff-output-chunks pre { margin: 0; font-family: 'Fira Code', monospace; font-size: 14px; }
+.diff-output-lines mark.word-diff-added,
+.split-line-code mark.word-diff-added,
+.diff-output-lines mark.word-diff-removed,
+.split-line-code mark.word-diff-removed {
+    border-radius: 3px; padding: 1px 2px; font: inherit; color: inherit;
+}
+.diff-output-lines mark.word-diff-added,
+.split-line-code mark.word-diff-added { background-color: rgba(152, 195, 121, 0.45); }
+.diff-output-lines mark.word-diff-removed,
+.split-line-code mark.word-diff-removed { background-color: rgba(224, 108, 117, 0.45); }
 
 .fold-divider {
     display: flex; align-items: center; gap: 10px; padding: 6px 16px; margin: 2px 0;
@@ -196,7 +202,8 @@ div.code-toolbar:hover > .toolbar { opacity: 1; }
 .split-panel { background-color: var(--bg-input); border-radius: var(--radius-m); border: 1px solid var(--border-color); overflow: hidden; }
 .split-panel-header { padding: 10px 16px; background-color: var(--bg-header); border-bottom: 1px solid var(--border-color); font-weight: 600; font-size: 14px; }
 .split-lines { max-height: 60vh; overflow: auto; font-family: 'Fira Code', monospace; font-size: 13px; line-height: 1.6; direction: ltr; text-align: left; }
-.split-line { display: flex; white-space: pre; box-sizing: border-box; }
+.split-line { display: flex; white-space: pre; box-sizing: border-box; border-bottom: 1px solid var(--line-divider); }
+.split-lines .split-line:last-child { border-bottom: none; }
 .split-line-num { flex: 0 0 auto; width: 40px; padding: 0 10px; text-align: right; color: var(--text-secondary); opacity: 0.5; user-select: none; border-right: 1px solid var(--border-color); }
 .split-line-code { padding: 0 12px; }
 .split-line.type-added { background-color: rgba(152, 195, 121, 0.18); border-inline-start: 3px solid var(--accent-green); }
@@ -204,14 +211,8 @@ div.code-toolbar:hover > .toolbar { opacity: 1; }
 .split-line.type-unchanged { border-inline-start: 3px solid transparent; }
 .split-line.type-empty { border-inline-start: 3px solid transparent; background: repeating-linear-gradient(45deg, transparent, transparent 6px, rgba(255,255,255,0.04) 6px, rgba(255,255,255,0.04) 12px); }
 .split-line.type-empty .split-line-num { visibility: hidden; }
-.split-line-code mark.word-diff-added,
-.split-line-code mark.word-diff-removed {
-    border-radius: 3px; padding: 1px 2px; font: inherit; color: inherit;
-}
-.split-line-code mark.word-diff-added { background-color: rgba(152, 195, 121, 0.45); }
-.split-line-code mark.word-diff-removed { background-color: rgba(224, 108, 117, 0.45); }
 
-.diff-legend { display: flex; gap: 16px; font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; }
+.diff-legend { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; }
 .legend-item { display: flex; align-items: center; gap: 6px; }
 .legend-item::before { content: ''; display: inline-block; width: 12px; height: 12px; border-radius: 3px; }
 .legend-added::before { background-color: rgba(152, 195, 121, 0.5); }
@@ -231,6 +232,34 @@ div.code-toolbar:hover > .toolbar { opacity: 1; }
     .code-header { flex-wrap: wrap; gap: 8px; }
     .diff-split-view { grid-template-columns: 1fr; }
     .split-lines { max-height: 40vh; }
+    .split-line-num { width: 28px; padding: 0 6px; }
+
+    /* Action buttons stack full-width for easy tapping instead of being
+       squeezed side by side. */
+    .action-footer > .compare-button { width: 100%; text-align: center; }
+    .action-footer .shortcut-hint { text-align: center; }
+
+    /* The diff toolbar packs a lot of controls (view toggle, collapse/wrap
+       toggles, copy/download/share) - let them wrap onto their own rows and
+       take the full width instead of overflowing horizontally. */
+    .diff-toolbar { flex-direction: column; align-items: stretch; }
+    .diff-toolbar > #new-comparison-btn { width: 100%; text-align: center; }
+    .diff-stats { text-align: center; }
+    .diff-actions { justify-content: center; }
+    .diff-actions .compare-button { flex: 1 1 auto; }
+
+    /* Advanced Settings: let the ignore-rules block take the full row and
+       shrink the plugin grid a bit further. */
+    .ignore-rules-section { flex-basis: 100%; min-width: 0; }
+    .plugins-group { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); max-width: 100%; }
+}
+
+@media (max-width: 480px) {
+    .logo h1 { font-size: 20px; }
+    .icon-button { padding: 6px 8px; font-size: 12px; }
+    .view-toggle-btn { padding: 7px 10px; font-size: 12px; }
+    .compare-button { padding: 10px 16px; font-size: 15px; }
+    .code-panel { height: 32vh; }
 }
 
 .main-header:focus-visible,

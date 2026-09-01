@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const splitRightEl = document.getElementById('split-right');
     const collapseUnchangedToggle = document.getElementById('collapse-unchanged-toggle');
     const wrapLinesToggle = document.getElementById('wrap-lines-toggle');
-    const diffOutputChunksEl = document.getElementById('diff-output-chunks');
+    const diffOutputLinesEl = document.getElementById('diff-output-lines');
     const ignorePatternsInput = document.getElementById('ignore-patterns-input');
     const ignoreRulesMode = document.getElementById('ignore-rules-mode');
     const ignoreRulesStatusEl = document.getElementById('ignore-rules-status');
@@ -55,15 +55,12 @@ document.addEventListener('DOMContentLoaded', () => {
             languageSearchPlaceholder: 'Search language...',
             advancedSettings: 'Advanced Settings',
             pluginsLabel: 'Plugins:',
-            pluginLineNumbers: 'Line Numbers',
             pluginShowInvisibles: 'Show Invisibles',
             pluginAutolinker: 'Autolinker',
-            pluginWpd: 'WPD Links',
             pluginMatchBraces: 'Match Braces',
             pluginInlineColor: 'Inline Color',
             pluginPreviewers: 'CSS Previewers',
             pluginCommandLine: 'Command Line',
-            pluginToolbar: 'Toolbar',
             processingLabel: 'Processing:',
             ignoreWhitespace: 'Ignore Whitespace',
             ignoreCase: 'Ignore Case',
@@ -92,6 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
             shareLink: 'Share Link',
             shareLinkCopied: 'Link copied!',
             shareLinkManualCopy: 'Copy this link to share your comparison:',
+            copyDiffManualCopy: 'Copy this diff:',
             shareLinkTooLong: 'Note: this link is quite long and may not work everywhere (e.g. some chat apps truncate long links).',
             shareLoadFailed: 'Could not load the shared comparison from this link (it may be corrupted or use an unsupported format).',
             legendAdded: '+ added',
@@ -109,15 +107,12 @@ document.addEventListener('DOMContentLoaded', () => {
             languageSearchPlaceholder: 'جستجوی زبان...',
             advancedSettings: 'تنظیمات پیشرفته',
             pluginsLabel: ':افزونه‌ها',
-            pluginLineNumbers: 'شماره خط',
             pluginShowInvisibles: 'نمایش کاراکترهای نامرئی',
             pluginAutolinker: 'لینک خودکار',
-            pluginWpd: 'لینک‌های WPD',
             pluginMatchBraces: 'تطبیق پرانتزها',
             pluginInlineColor: 'نمایش رنگ درون‌خطی',
             pluginPreviewers: 'پیش‌نمایش CSS',
             pluginCommandLine: 'خط فرمان',
-            pluginToolbar: 'نوار ابزار',
             processingLabel: ':پردازش',
             ignoreWhitespace: 'نادیده گرفتن فاصله‌ها',
             ignoreCase: 'نادیده گرفتن بزرگی/کوچکی حروف',
@@ -146,6 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
             shareLink: 'اشتراک‌گذاری لینک',
             shareLinkCopied: '!لینک کپی شد',
             shareLinkManualCopy: ':این لینک را برای اشتراک‌گذاری مقایسه کپی کنید',
+            copyDiffManualCopy: ':این تفاوت‌ها را کپی کنید',
             shareLinkTooLong: '.توجه: این لینک نسبتاً طولانی است و ممکن است در همه‌جا کار نکند (مثلاً برخی اپ‌های پیام‌رسان لینک‌های طولانی را کوتاه می‌کنند)',
             shareLoadFailed: '.بارگذاری مقایسه از این لینک ممکن نشد (ممکن است خراب باشد یا فرمت پشتیبانی‌نشده داشته باشد)',
             legendAdded: 'افزوده‌شده +',
@@ -169,12 +165,11 @@ document.addEventListener('DOMContentLoaded', () => {
         ignoreRulesMode: 'removeLines',
         isDarkTheme: window.matchMedia('(prefers-color-scheme: light)').matches ? false : true,
         plugins: {
-            // Display Plugins
-            'line-numbers': true, 'toolbar': true, 'show-invisibles': false, 'autolinker': true,
-            'wpd': false, 'match-braces': true, 'inline-color': false, 'previewers': true,
-            'command-line': false, 'show-language': true,
-            // Toolbar Plugins (depend on 'toolbar')
-            'copy-to-clipboard': true, 'download-button': true,
+            // Display Plugins (applied via Prism.highlight()'s hook pipeline, per-line,
+            // in both Unified and Split views)
+            'show-invisibles': false, 'autolinker': true,
+            'match-braces': true, 'inline-color': false, 'previewers': true,
+            'command-line': false,
             // Processing Plugins
             'normalize-whitespace': false,
             'ignore-case': false
@@ -183,6 +178,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // === Initialization ===
     function init() {
+        if (Prism.plugins && Prism.plugins.autoloader) {
+            Prism.plugins.autoloader.languages_path = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/components/';
+        }
         loadSettings();
         setupEventListeners();
         populateLanguages();
@@ -373,13 +371,13 @@ document.addEventListener('DOMContentLoaded', () => {
         ignorePatternsInput.addEventListener('change', onIgnoreRulesChange);
         ignoreRulesMode.addEventListener('change', onIgnoreRulesChange);
 
-        diffOutputChunksEl.addEventListener('click', e => {
+        diffOutputLinesEl.addEventListener('click', e => {
             const divider = e.target.closest('.fold-divider');
             if (!divider) return;
             expandedUnifiedFolds.add(Number(divider.dataset.foldId));
             renderDiffOutput();
         });
-        diffOutputChunksEl.addEventListener('keydown', e => {
+        diffOutputLinesEl.addEventListener('keydown', e => {
             if (e.key !== 'Enter' && e.key !== ' ') return;
             const divider = e.target.closest('.fold-divider');
             if (!divider) return;
@@ -534,7 +532,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         expandedUnifiedFolds = new Set();
         expandedSplitFolds = new Set();
-        renderDiffOutput();
+        ensureLanguageLoaded(state.language, renderDiffOutput);
     }
 
     function showIgnoreRulesErrors(errors) {
@@ -555,33 +553,21 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderDiffOutput() {
         if (!lastDiffEntries) return;
 
-        // The unified text + stats are always kept up to date (copy/download and the
-        // stats line rely on them regardless of which view is currently visible).
-        const diffText = CodeCompareDiff.formatDiffText(lastDiffEntries);
-        diffOutputEl.textContent = diffText;
-        diffOutputEl.className = `language-diff-${state.language}`;
-        for (const plugin in state.plugins) {
-            diffOutputEl.classList.toggle(plugin, state.plugins[plugin]);
-        }
-        try {
-            Prism.highlightElement(diffOutputEl);
-        } catch (err) {
-            console.error('Prism highlighting failed:', err);
-        }
+        // This hidden buffer only exists so Copy Diff / Download .diff have
+        // exact plain text to work with - it is never shown to the user.
+        diffOutputEl.textContent = CodeCompareDiff.formatDiffText(lastDiffEntries);
 
         const { added, removed } = CodeCompareDiff.computeStats(lastDiffEntries);
         diffStatsEl.textContent = t('statsSummary', { added, removed });
 
         if (state.diffView === 'split') {
-            diffOutputEl.style.display = 'none';
-            diffOutputChunksEl.style.display = 'none';
+            diffOutputLinesEl.style.display = 'none';
             diffSplitView.style.display = 'grid';
             renderSplitView(lastDiffEntries);
         } else {
             diffSplitView.style.display = 'none';
-            const usedChunks = state.collapseUnchanged && renderUnifiedChunks(lastDiffEntries);
-            diffOutputEl.style.display = usedChunks ? 'none' : '';
-            diffOutputChunksEl.style.display = usedChunks ? '' : 'none';
+            diffOutputLinesEl.style.display = '';
+            renderUnifiedLines(lastDiffEntries);
         }
     }
 
@@ -618,62 +604,57 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * Renders the Unified view as a sequence of independently syntax-highlighted
-     * chunks, with clickable dividers standing in for long collapsed runs of
-     * unchanged lines. Returns false (and renders nothing) if collapsing
-     * wouldn't actually hide anything, so the caller can fall back to the
-     * simpler single-block view instead.
+     * Renders the Unified view as one real DOM element per line (mirroring the
+     * Split view's approach), each individually syntax-highlighted via
+     * Prism.highlight() and separated by a CSS border - not a computed
+     * background pattern, so the divider between lines can never drift out of
+     * sync with the text, regardless of line-wrapping or folding state.
      */
-    function renderUnifiedChunks(diffEntries) {
+    function renderUnifiedLines(diffEntries) {
+        const html = [];
+        let lineNo = 0;
+
+        function renderRow(entry) {
+            lineNo++;
+            const prefix = entry.type === 'added' ? '+' : entry.type === 'removed' ? '-' : '\u00a0';
+            html.push(
+                `<div class="unified-line type-${entry.type}">` +
+                `<span class="unified-line-num">${lineNo}</span>` +
+                `<span class="unified-line-prefix">${prefix}</span>` +
+                `<code class="unified-line-code">${highlightLine(entry.line)}</code>` +
+                `</div>`
+            );
+        }
+
+        if (!state.collapseUnchanged) {
+            diffEntries.forEach(renderRow);
+            diffOutputLinesEl.innerHTML = html.join('');
+            return;
+        }
+
         const folded = CodeCompareDiff.foldRuns(diffEntries, entry => entry.type === 'unchanged', {
             context: FOLD_CONTEXT,
             minRun: FOLD_MIN_RUN
         });
-        if (!folded.some(segment => segment.kind === 'collapsed')) return false;
-
-        diffOutputChunksEl.innerHTML = '';
-        let currentGroup = [];
         let foldIndex = -1;
-
-        function flushGroup() {
-            if (currentGroup.length === 0) return;
-            const pre = document.createElement('pre');
-            pre.className = `language-diff-${state.language}`;
-            for (const plugin in state.plugins) {
-                // Line Numbers/Toolbar operate on a single whole block and don't
-                // translate to a set of independent chunks; every other Prism
-                // plugin still applies since it hooks into highlight() itself.
-                if (plugin === 'line-numbers' || plugin === 'toolbar') continue;
-                pre.classList.toggle(plugin, state.plugins[plugin]);
-            }
-            pre.textContent = CodeCompareDiff.formatDiffText(currentGroup);
-            try {
-                Prism.highlightElement(pre);
-            } catch (err) {
-                console.error('Prism highlighting failed for a diff chunk:', err);
-            }
-            diffOutputChunksEl.appendChild(pre);
-            currentGroup = [];
-        }
 
         folded.forEach(segment => {
             if (segment.kind === 'item') {
-                currentGroup.push(segment.item);
+                renderRow(segment.item);
                 return;
             }
             foldIndex++;
             if (expandedUnifiedFolds.has(foldIndex)) {
-                currentGroup.push(...segment.items);
+                segment.items.forEach(renderRow);
                 return;
             }
-            flushGroup();
-            const divider = document.createElement('div');
-            divider.innerHTML = foldDividerHtml('fold-divider', foldIndex, segment.items.length);
-            diffOutputChunksEl.appendChild(divider.firstElementChild);
+            // Rows stay hidden, but the line count must still account for them,
+            // or the next visible line number would look wrong.
+            lineNo += segment.items.length;
+            html.push(foldDividerHtml('fold-divider', foldIndex, segment.items.length));
         });
-        flushGroup();
 
-        return true;
+        diffOutputLinesEl.innerHTML = html.join('');
     }
 
     function renderSplitView(diffEntries) {
@@ -785,11 +766,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function copyDiffToClipboard() {
         const text = getUnifiedStyleDiff();
-        navigator.clipboard.writeText(text).then(() => {
-            const original = copyDiffBtn.textContent;
-            copyDiffBtn.textContent = t('copyDiffDone');
-            setTimeout(() => { copyDiffBtn.textContent = original; }, 1500);
-        }).catch(err => console.error('Copy failed:', err));
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(() => {
+                const original = copyDiffBtn.textContent;
+                copyDiffBtn.textContent = t('copyDiffDone');
+                setTimeout(() => { copyDiffBtn.textContent = original; }, 1500);
+            }).catch(err => {
+                console.error('Copy failed:', err);
+                window.prompt(t('copyDiffManualCopy'), text);
+            });
+        } else {
+            window.prompt(t('copyDiffManualCopy'), text);
+        }
     }
 
     function downloadDiffFile() {
@@ -858,7 +847,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (typeof payload.o === 'string') originalCodeEl.value = payload.o;
             if (typeof payload.m === 'string') modifiedCodeEl.value = payload.m;
-            if (typeof payload.lang === 'string' && Prism.languages[payload.lang]) {
+            if (typeof payload.lang === 'string' && SUPPORTED_LANGUAGES[payload.lang]) {
                 state.language = payload.lang;
             }
             if (payload.view === 'unified' || payload.view === 'split') {
@@ -868,7 +857,7 @@ document.addEventListener('DOMContentLoaded', () => {
             populateLanguages();
             syncViewToggleButtons();
             updateLineCounts();
-            runComparison();
+            ensureLanguageLoaded(state.language, runComparison);
         } catch (err) {
             console.error('Failed to load shared comparison:', err);
             alert(t('shareLoadFailed'));
@@ -884,7 +873,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function applyTheme() {
         const themeName = state.isDarkTheme ? 'prism-okaidia' : 'prism';
-        prismThemeLink.href = `https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/${themeName}.min.css`;
+        prismThemeLink.href = `https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/themes/${themeName}.min.css`;
         document.body.classList.toggle('light-theme', !state.isDarkTheme);
     }
 
@@ -897,10 +886,31 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // A curated list of languages actually verified to exist as real Prism 1.30.0
+    // components. With the Autoloader plugin, languages beyond the default
+    // core bundle (markup/css/clike/javascript) aren't loaded until picked, so
+    // Prism.languages can't be introspected to build this list at startup.
+    const SUPPORTED_LANGUAGES = {
+        markup: 'HTML/XML', css: 'CSS', javascript: 'JavaScript', typescript: 'TypeScript',
+        jsx: 'JSX', tsx: 'TSX', json: 'JSON', json5: 'JSON5', yaml: 'YAML', toml: 'TOML',
+        python: 'Python', java: 'Java', csharp: 'C#', cpp: 'C++', c: 'C', go: 'Go',
+        rust: 'Rust', php: 'PHP', ruby: 'Ruby', swift: 'Swift', kotlin: 'Kotlin',
+        scala: 'Scala', dart: 'Dart', perl: 'Perl', lua: 'Lua', r: 'R', matlab: 'MATLAB',
+        sql: 'SQL', graphql: 'GraphQL', bash: 'Bash/Shell', powershell: 'PowerShell',
+        docker: 'Dockerfile', nginx: 'Nginx', ini: 'INI', diff: 'Diff', markdown: 'Markdown',
+        scss: 'SCSS', sass: 'Sass', less: 'Less', stylus: 'Stylus', haskell: 'Haskell',
+        elixir: 'Elixir', erlang: 'Erlang', clojure: 'Clojure', groovy: 'Groovy',
+        objectivec: 'Objective-C', vbnet: 'VB.NET', 'visual-basic': 'Visual Basic',
+        fsharp: 'F#', pascal: 'Pascal', fortran: 'Fortran', cobol: 'COBOL', ada: 'Ada',
+        d: 'D', nim: 'Nim', crystal: 'Crystal', julia: 'Julia', solidity: 'Solidity',
+        protobuf: 'Protocol Buffers', regex: 'RegExp', latex: 'LaTeX', wasm: 'WebAssembly',
+        makefile: 'Makefile', cmake: 'CMake', properties: 'Properties', git: 'Git',
+        log: 'Log file', http: 'HTTP', apacheconf: 'Apache Config', plsql: 'PL/SQL'
+    };
+
     function populateLanguages() {
-        const friendlyNames = { 'javascript': 'JavaScript', 'typescript': 'TypeScript', 'python': 'Python', 'csharp': 'C#', 'cpp': 'C++', 'markup': 'HTML/XML' };
-        const languages = Object.keys(Prism.languages).filter(lang => typeof Prism.languages[lang] === 'object' && !Prism.languages[lang].alias).sort((a,b) => (friendlyNames[a]||a).localeCompare(friendlyNames[b]||b));
-        langOptionsContainer.innerHTML = languages.map(lang => `<div data-lang="${lang}">${friendlyNames[lang] || lang}</div>`).join('');
+        const languages = Object.keys(SUPPORTED_LANGUAGES).sort((a, b) => SUPPORTED_LANGUAGES[a].localeCompare(SUPPORTED_LANGUAGES[b]));
+        langOptionsContainer.innerHTML = languages.map(lang => `<div data-lang="${lang}">${SUPPORTED_LANGUAGES[lang]}</div>`).join('');
         langOptionsContainer.querySelectorAll('div').forEach(el => {
             el.addEventListener('click', () => {
                 state.language = el.dataset.lang;
@@ -908,11 +918,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 langOptionsContainer.classList.remove('visible');
                 saveSettings();
                 if (diffOutputContainer.style.display !== 'none') {
-                    renderDiffOutput();
+                    ensureLanguageLoaded(state.language, renderDiffOutput);
                 }
             });
         });
-        langSearchInput.value = friendlyNames[state.language] || state.language;
+        langSearchInput.value = SUPPORTED_LANGUAGES[state.language] || state.language;
+    }
+
+    /**
+     * Makes sure a language's grammar is actually loaded before we highlight
+     * with it directly via Prism.highlight() (used by the Split view), since
+     * that path doesn't go through Prism's own highlightElement-based
+     * autoloading hook. Falls back to just calling the callback if the
+     * autoloader isn't available or the language is already loaded.
+     */
+    function ensureLanguageLoaded(lang, callback) {
+        if (Prism.languages[lang]) {
+            callback();
+            return;
+        }
+        if (Prism.plugins && Prism.plugins.autoloader) {
+            Prism.plugins.autoloader.loadLanguages(lang, callback, callback);
+        } else {
+            callback();
+        }
     }
 
     function filterLanguages() {

@@ -9,13 +9,13 @@ CodeCompare is a web-based utility to compare two snippets of code or text and v
 ## Features
 
 * **Side-by-side input** — two independent text areas for the original and modified code.
-* **Line-by-line diff** — showing additions, deletions, and unchanged lines, in either a Unified or a Side-by-Side (Split) view, with word-level highlighting on modified lines in Split view.
+* **Line-by-line diff** — showing additions, deletions, and unchanged lines, with line numbers and a subtle divider between every line, in either a Unified or a Side-by-Side (Split) view, with word-level highlighting on modified lines in Split view.
 * **File upload & drag-and-drop** — load either side from a local file instead of pasting.
 * **Diff summary** — a quick "N added · M removed" count above the result.
 * **Copy / download diff** — copy the diff to your clipboard or download it as a `.diff` file.
 * **Shareable link, no server required** — generate a link that encodes the full comparison (gzip-compressed) directly in the URL; opening it restores both snippets, the language, and the view. Nothing is ever uploaded anywhere.
 * **Syntax highlighting** — pick a language from a searchable dropdown; the diff output is highlighted accordingly via Prism.js.
-* **Configurable Prism plugins** — tucked under a collapsible "Advanced Settings" panel so the default view stays simple: Line Numbers, Match Braces, Show Invisibles, Inline Color, CSS Previewers, Command Line, Autolinker, WPD Links, and the copy/download toolbar buttons.
+* **Configurable Prism plugins** — tucked under a collapsible "Advanced Settings" panel so the default view stays simple: Match Braces, Show Invisibles, Inline Color, CSS Previewers, Command Line, and Autolinker.
 * **Ignore Whitespace / Ignore Case** — optionally normalize whitespace and/or letter case before diffing (matched lines still display their original casing).
 * **Format JSON** — pretty-print valid JSON on either side (independently) before comparing, so formatting differences (minified vs. indented) don't drown out real structural changes.
 * **Custom ignore rules (regex)** — one or more patterns, either dropping whole matching lines (e.g. log timestamps, `DEBUG:` lines) or stripping just the matched text within each line, before diffing. Invalid patterns are reported without blocking the valid ones.
@@ -88,7 +88,7 @@ CodeCompare/
 ## Technologies Used
 
 * HTML5, CSS3, JavaScript (ES6+)
-* [Prism.js](https://prismjs.com/) for syntax highlighting and its official plugins
+* [Prism.js](https://prismjs.com/) (core + Autoloader) for syntax highlighting, applied per line in both views for reliable, driftless line dividers regardless of wrapping or folding
 * A small in-house LCS-based line-diff and word-diff engine (`diff-utils.js`), unit tested with Jest
 * A small in-house share-link engine (`share-utils.js`) using the browser's native Compression Streams API, unit tested with Jest
 * A small in-house JSON formatting helper (`json-utils.js`), unit tested with Jest
@@ -101,7 +101,7 @@ CodeCompare/
 * The diff engine is a straightforward LCS algorithm (O(n·m)); for very large inputs it falls back to a coarse "everything changed" diff rather than freezing the tab.
 * Word-level highlighting is only available in the Split view. On a replaced line pair there, the changed words are highlighted but that specific line shows plain text rather than full syntax coloring (unchanged and purely added/removed lines still get full Prism syntax highlighting).
 * Custom ignore-rule patterns are always case-sensitive regardless of the separate "Ignore Case" toggle; add an explicit case-insensitive character class in the pattern if needed (JavaScript regex syntax, no inline `(?i)` flag support).
-* All Prism.js core, language, and plugin files must stay on the same version (currently 1.30.0, matching the bundled `lib/prism.js`) - mixing versions between the bundled core and CDN-loaded plugins causes console errors and broken plugins, since Prism's internal language-grammar shape can change between versions.
+* Syntax highlighting uses Prism's official Autoloader plugin: the core bundle (`lib/prism.js`) ships with HTML/CSS/JavaScript built in and works fully offline; any other language is fetched from cdnjs the first time it's used and then cached by the service worker for offline use afterward.
 * Share links encode the full comparison in the URL itself; very large comparisons produce very long links, which some chat apps or SMS may truncate. There's no length limit enforced, but a console warning is logged past ~6000 characters.
 * The Line Numbers and Toolbar Prism plugins only apply to the plain (non-collapsed) Unified view and to the Split view's own line numbers - when Unified view collapses unchanged lines, it renders as several independently highlighted chunks, which don't support those two particular plugins (every other plugin still works per chunk).
 
