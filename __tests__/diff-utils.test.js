@@ -1,4 +1,4 @@
-const { computeLineDiff, formatDiffText, computeStats, buildSideBySideRows, computeWordDiff, foldRuns, applyIgnoreRules } = require('../diff-utils.js');
+const { computeLineDiff, formatDiffText, computeStats, buildSideBySideRows, computeWordDiff, foldRuns, applyIgnoreRules, applyIgnoreBlankLines, detectMovedBlocks } = require('../diff-utils.js');
 
 describe('computeLineDiff', () => {
     test('identical texts produce only unchanged lines', () => {
@@ -121,12 +121,24 @@ describe('computeStats', () => {
             { type: 'removed', line: 'c' },
             { type: 'added', line: 'B' }
         ];
-        expect(computeStats(diff)).toEqual({ added: 1, removed: 2 });
+        expect(computeStats(diff)).toEqual({ added: 1, removed: 2, unchanged: 1, total: 4, similarity: 25 });
     });
 
-    test('no changes means zero added and zero removed', () => {
+    test('no changes means zero added and zero removed, 100% similarity', () => {
         const diff = [{ type: 'unchanged', line: 'a' }];
-        expect(computeStats(diff)).toEqual({ added: 0, removed: 0 });
+        expect(computeStats(diff)).toEqual({ added: 0, removed: 0, unchanged: 1, total: 1, similarity: 100 });
+    });
+
+    test('completely different content means 0% similarity', () => {
+        const diff = [
+            { type: 'removed', line: 'a' },
+            { type: 'added', line: 'b' }
+        ];
+        expect(computeStats(diff)).toEqual({ added: 1, removed: 1, unchanged: 0, total: 2, similarity: 0 });
+    });
+
+    test('empty diff means 100% similarity by convention', () => {
+        expect(computeStats([])).toEqual({ added: 0, removed: 0, unchanged: 0, total: 0, similarity: 100 });
     });
 });
 
@@ -183,6 +195,16 @@ describe('buildSideBySideRows', () => {
     test('an empty diff produces no rows', () => {
         expect(buildSideBySideRows([])).toEqual([]);
     });
+
+    test('propagates a moved flag from the source entries into left/right rows', () => {
+        const diff = [
+            { type: 'removed', line: 'a', moved: true },
+            { type: 'added', line: 'b' }
+        ];
+        const rows = buildSideBySideRows(diff);
+        expect(rows[0].left.moved).toBe(true);
+        expect(rows[0].right.moved).toBeUndefined();
+    });
 });
 
 describe('computeWordDiff', () => {
@@ -228,6 +250,44 @@ describe('computeWordDiff', () => {
         const diff = computeWordDiff('', 'hello world');
         expect(diff.filter(d => d.type === 'removed')).toHaveLength(0);
         expect(diff.map(d => d.value).join('')).toBe('hello world');
+    });
+
+    test('Persian words are tokenized as whole words, not per character', () => {
+        const diff = computeWordDiff('سلام دنیای بزرگ', 'سلام دنیای کوچک');
+        expect(diff).toEqual([
+            { type: 'unchanged', value: 'سلام' },
+            { type: 'unchanged', value: ' ' },
+            { type: 'unchanged', value: 'دنیای' },
+            { type: 'unchanged', value: ' ' },
+            { type: 'removed', value: 'بزرگ' },
+            { type: 'added', value: 'کوچک' }
+        ]);
+    });
+
+    test('Arabic words are tokenized as whole words, not per character', () => {
+        const diff = computeWordDiff('مرحبا بالعالم', 'مرحبا بالكون');
+        expect(diff).toEqual([
+            { type: 'unchanged', value: 'مرحبا' },
+            { type: 'unchanged', value: ' ' },
+            { type: 'removed', value: 'بالعالم' },
+            { type: 'added', value: 'بالكون' }
+        ]);
+    });
+
+    test('Persian punctuation and digits are handled correctly', () => {
+        const diff = computeWordDiff('سلام، امروز ۱۴۰۵ است.', 'سلام، امروز ۱۴۰۶ است.');
+        expect(diff).toEqual([
+            { type: 'unchanged', value: 'سلام' },
+            { type: 'unchanged', value: '،' },
+            { type: 'unchanged', value: ' ' },
+            { type: 'unchanged', value: 'امروز' },
+            { type: 'unchanged', value: ' ' },
+            { type: 'removed', value: '۱۴۰۵' },
+            { type: 'added', value: '۱۴۰۶' },
+            { type: 'unchanged', value: ' ' },
+            { type: 'unchanged', value: 'است' },
+            { type: 'unchanged', value: '.' }
+        ]);
     });
 });
 
@@ -358,5 +418,93 @@ describe('applyIgnoreRules', () => {
         const result = applyIgnoreRules('a\nb', ['[bad1', '(bad2'], 'removeLines');
         expect(result.text).toBe('a\nb');
         expect(result.errors).toHaveLength(2);
+    });
+});
+
+describe('applyIgnoreBlankLines', () => {
+    test('reclassifies added/removed blank lines as unchanged', () => {
+        const diff = [
+            { type: 'unchanged', line: 'a' },
+            { type: 'added', line: '' },
+            { type: 'removed', line: '   ' },
+            { type: 'added', line: 'b' }
+        ];
+        expect(applyIgnoreBlankLines(diff)).toEqual([
+            { type: 'unchanged', line: 'a' },
+            { type: 'unchanged', line: '' },
+            { type: 'unchanged', line: '   ' },
+            { type: 'added', line: 'b' }
+        ]);
+    });
+
+    test('non-blank added/removed lines are left untouched', () => {
+        const diff = [{ type: 'added', line: 'code' }, { type: 'removed', line: 'old' }];
+        expect(applyIgnoreBlankLines(diff)).toEqual(diff);
+    });
+
+    test('does not mutate the input array', () => {
+        const diff = [{ type: 'added', line: '' }];
+        const result = applyIgnoreBlankLines(diff);
+        expect(result).not.toBe(diff);
+        expect(diff[0].type).toBe('added');
+    });
+});
+
+describe('detectMovedBlocks', () => {
+    test('flags a 2+ line block that was removed from one spot and added elsewhere', () => {
+        const diff = [
+            { type: 'unchanged', line: 'start' },
+            { type: 'removed', line: 'function helper() {' },
+            { type: 'removed', line: '    return 42;' },
+            { type: 'removed', line: '}' },
+            { type: 'unchanged', line: 'middle' },
+            { type: 'added', line: 'function helper() {' },
+            { type: 'added', line: '    return 42;' },
+            { type: 'added', line: '}' },
+            { type: 'unchanged', line: 'end' }
+        ];
+        const result = detectMovedBlocks(diff);
+        expect(result.filter(e => e.moved)).toHaveLength(6);
+        expect(result[0].moved).toBeUndefined();
+        expect(result[1].moved).toBe(true);
+        expect(result[4].moved).toBeUndefined();
+    });
+
+    test('does not flag short single-line coincidental matches', () => {
+        const diff = [
+            { type: 'removed', line: '}' },
+            { type: 'unchanged', line: 'x' },
+            { type: 'added', line: '}' }
+        ];
+        const result = detectMovedBlocks(diff);
+        expect(result.some(e => e.moved)).toBe(false);
+    });
+
+    test('flags a long single line that was moved', () => {
+        const longLine = 'const configurationValue = computeDefaultSettings();';
+        const diff = [
+            { type: 'removed', line: longLine },
+            { type: 'unchanged', line: 'x' },
+            { type: 'added', line: longLine }
+        ];
+        const result = detectMovedBlocks(diff);
+        expect(result[0].moved).toBe(true);
+        expect(result[2].moved).toBe(true);
+    });
+
+    test('leaves genuinely new/removed content unflagged', () => {
+        const diff = [
+            { type: 'removed', line: 'const oldThing = 1;' },
+            { type: 'added', line: 'const newThing = 2;' }
+        ];
+        const result = detectMovedBlocks(diff);
+        expect(result.some(e => e.moved)).toBe(false);
+    });
+
+    test('does not mutate the input array', () => {
+        const diff = [{ type: 'removed', line: 'aaaaaaaaaaaaaaaaaaaaaaa' }, { type: 'added', line: 'aaaaaaaaaaaaaaaaaaaaaaa' }];
+        const result = detectMovedBlocks(diff);
+        expect(result).not.toBe(diff);
+        expect(diff[0].moved).toBeUndefined();
     });
 });
