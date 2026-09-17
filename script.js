@@ -1,8 +1,17 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // === DOM Elements ===
     const originalCodeEl = document.getElementById('original-code');
     const modifiedCodeEl = document.getElementById('modified-code');
     const compareBtn = document.getElementById('compare-btn');
+    const swapBtn = document.getElementById('swap-btn');
+    const shortcutsHelpBtn = document.getElementById('shortcuts-help-btn');
+    const shortcutsModal = document.getElementById('shortcuts-modal');
+    const shortcutsModalBody = document.getElementById('shortcuts-modal-body');
+    const shortcutsModalClose = document.getElementById('shortcuts-modal-close');
+    const diffSearchInput = document.getElementById('diff-search-input');
+    const diffSearchCountEl = document.getElementById('diff-search-count');
+    const diffSearchPrevBtn = document.getElementById('diff-search-prev-btn');
+    const diffSearchNextBtn = document.getElementById('diff-search-next-btn');
+    const detectLanguageBtn = document.getElementById('detect-language-btn');
     const formatJsonBtn = document.getElementById('format-json-btn');
     const formatJsonStatusEl = document.getElementById('format-json-status');
     const diffOutputContainer = document.getElementById('diff-output-container');
@@ -11,11 +20,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const modifiedLinesEl = document.getElementById('modified-lines');
     const themeSwitcher = document.getElementById('theme-switcher');
     const prismThemeLink = document.getElementById('prism-theme-link');
+    const syntaxThemeSelect = document.getElementById('syntax-theme-select');
     const langSearchInput = document.getElementById('language-search');
     const langOptionsContainer = document.getElementById('language-options');
     const pluginToggles = document.querySelectorAll('.plugins-group input, .process-section input');
-    const newComparisonBtn = document.getElementById('new-comparison-btn');
-    const comparisonContainer = document.getElementById('comparison-container');
+    const newComparisonBtn = document.getElementById('new-comparison-btn');    const comparisonContainer = document.getElementById('comparison-container');
     const langToggleBtn = document.getElementById('lang-toggle-btn');
     const uploadOriginalBtn = document.getElementById('upload-original-btn');
     const uploadModifiedBtn = document.getElementById('upload-modified-btn');
@@ -24,6 +33,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const diffStatsEl = document.getElementById('diff-stats');
     const copyDiffBtn = document.getElementById('copy-diff-btn');
     const downloadDiffBtn = document.getElementById('download-diff-btn');
+    const exportHtmlBtn = document.getElementById('export-html-btn');
+    const printPdfBtn = document.getElementById('print-pdf-btn');
     const shareLinkBtn = document.getElementById('share-link-btn');
     const viewUnifiedBtn = document.getElementById('view-unified-btn');
     const viewSplitBtn = document.getElementById('view-split-btn');
@@ -32,21 +43,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const splitRightEl = document.getElementById('split-right');
     const collapseUnchangedToggle = document.getElementById('collapse-unchanged-toggle');
     const wrapLinesToggle = document.getElementById('wrap-lines-toggle');
+    const liveDiffToggle = document.getElementById('live-diff-toggle');
+    const detectMovedToggle = document.getElementById('detect-moved-toggle');
     const diffOutputLinesEl = document.getElementById('diff-output-lines');
     const ignorePatternsInput = document.getElementById('ignore-patterns-input');
     const ignoreRulesMode = document.getElementById('ignore-rules-mode');
+    const ignorePresetSelect = document.getElementById('ignore-preset-select');
+    const ignorePresetSaveBtn = document.getElementById('ignore-preset-save-btn');
+    const ignorePresetDeleteBtn = document.getElementById('ignore-preset-delete-btn');
     const ignoreRulesStatusEl = document.getElementById('ignore-rules-status');
     const STORAGE_KEY = 'codecompare-settings';
-    const MAX_UPLOAD_SIZE = 2 * 1024 * 1024; // 2MB guard against pasting huge binaries by accident
+    const MAX_UPLOAD_SIZE = 2 * 1024 * 1024;
     let lastDiffEntries = null;
     let isSyncingScroll = false;
     const FOLD_CONTEXT = 3;
     const FOLD_MIN_RUN = 8;
+    const RENDER_CHUNK_SIZE = 1500;
+    let unifiedRenderLimit = RENDER_CHUNK_SIZE;
+    let splitRenderLimit = RENDER_CHUNK_SIZE;
     let expandedUnifiedFolds = new Set();
     let expandedSplitFolds = new Set();
     let formatJsonStatusTimer = null;
 
-    // === i18n ===
     const translations = {
         en: {
             pageTitle: 'CodeCompare Pro',
@@ -63,7 +81,16 @@ document.addEventListener('DOMContentLoaded', () => {
             pluginCommandLine: 'Command Line',
             processingLabel: 'Processing:',
             ignoreWhitespace: 'Ignore Whitespace',
+            ignoreBlankLines: 'Ignore Blank Lines',
+            ignorePresetPlaceholder: '— Saved presets —',
+            ignorePresetSave: 'Save preset',
+            ignorePresetDelete: 'Delete preset',
+            swapButton: 'Swap',
+            shortcutsHelp: 'Keyboard shortcuts',
+            detectLanguage: 'Auto-detect',
             ignoreCase: 'Ignore Case',
+            liveDiff: 'Live Diff (auto-compare while typing)',
+            detectMoved: 'Highlight Moved Code',
             customIgnoreRules: 'Custom Ignore Rules (regex, one per line):',
             ignorePatternsPlaceholder: 'e.g. \\d{4}-\\d{2}-\\d{2}',
             ignoreRemoveLines: 'Remove matching lines',
@@ -83,12 +110,19 @@ document.addEventListener('DOMContentLoaded', () => {
             collapseUnchanged: 'Collapse unchanged lines',
             wrapLines: 'Wrap long lines',
             foldShowLines: 'Show {count} hidden unchanged lines',
+            loadMoreRows: 'Show {count} more rows ({remaining} hidden for performance)',
             copyDiff: 'Copy Diff',
             copyDiffDone: 'Copied!',
             downloadDiff: 'Download .diff',
+            exportHtmlReport: 'Export HTML Report',
+            printPdf: 'Print / Save as PDF',
             shareLink: 'Share Link',
             shareLinkCopied: 'Link copied!',
             shareLinkManualCopy: 'Copy this link to share your comparison:',
+            copyLineManual: 'Copy this line:',
+            searchInDiff: 'Search in diff...',
+            searchNoMatches: 'No matches',
+            searchMatchCount: '{current}/{total}',
             copyDiffManualCopy: 'Copy this diff:',
             shareLinkTooLong: 'Note: this link is quite long and may not work everywhere (e.g. some chat apps truncate long links).',
             shareLoadFailed: 'Could not load the shared comparison from this link (it may be corrupted or use an unsupported format).',
@@ -98,7 +132,42 @@ document.addEventListener('DOMContentLoaded', () => {
             linesLabel: 'Lines',
             statsSummary: '{added} added \u00b7 {removed} removed',
             uploadTooLarge: 'File is too large to load (max 2MB).',
-            uploadFailed: 'Could not read that file.'
+            uploadFailed: 'Could not read that file.',
+            navCompare: 'Compare',
+            navHistory: 'History',
+            navSettings: 'Settings',
+            navBatch: 'Batch Compare',
+            batchTitle: 'Batch Compare Files',
+            batchOriginalFiles: 'Original files',
+            batchModifiedFiles: 'Modified files',
+            batchRun: 'Run Batch Compare',
+            batchHint: 'Files are matched by name. Files present on only one side are listed as fully added or removed.',
+            statTotalRuns: 'Comparisons run',
+            statLinesAdded: 'Lines added',
+            statLinesRemoved: 'Lines removed',
+            statTopLanguage: 'Most used language',
+            statAvgSimilarity: 'Average similarity',
+            exportHistory: 'Export',
+            importHistory: 'Import',
+            importSuccess: 'Imported!',
+            importFailed: 'Import failed',
+            historyTitle: 'Comparison History',
+            clearHistory: 'Clear History',
+            historyEmpty: 'No comparisons yet. Run one from the Compare tab.',
+            historyRestore: 'Restore',
+            historyDelete: 'Delete',
+            settingsTitle: 'Settings',
+            settingsAppearance: 'Appearance',
+            settingsAppearanceHint: 'Toggle theme and interface language from the top bar.',
+            settingsSyntaxThemeTitle: 'Code color theme',
+            settingsSyntaxThemeHint: 'Choose the syntax highlighting theme used for code.',
+            themeAuto: 'Auto (match app theme)',
+            settingsResetTitle: 'Reset local data',
+            settingsResetHint: 'Clears saved preferences and comparison history stored in this browser.',
+            settingsResetButton: 'Reset Data',
+            settingsAboutTitle: 'About',
+            settingsAboutHint: 'CodeCompare is an open-source, client-side diff tool.',
+            resetConfirm: 'This will clear all saved settings and comparison history. Continue?'
         },
         fa: {
             pageTitle: 'مقایسه‌گر کد',
@@ -115,7 +184,16 @@ document.addEventListener('DOMContentLoaded', () => {
             pluginCommandLine: 'خط فرمان',
             processingLabel: ':پردازش',
             ignoreWhitespace: 'نادیده گرفتن فاصله‌ها',
+            ignoreBlankLines: 'نادیده گرفتن خطوط خالی',
+            ignorePresetPlaceholder: '— پریست‌های ذخیره‌شده —',
+            ignorePresetSave: 'ذخیرهٔ پریست',
+            ignorePresetDelete: 'حذف پریست',
+            swapButton: 'جابه‌جایی',
+            shortcutsHelp: 'میان‌برهای کیبورد',
+            detectLanguage: 'تشخیص خودکار',
             ignoreCase: 'نادیده گرفتن بزرگی/کوچکی حروف',
+            liveDiff: 'دیف زنده (مقایسهٔ خودکار حین تایپ)',
+            detectMoved: 'برجسته‌سازی کد جابه‌جاشده',
             customIgnoreRules: ':(regex قوانین نادیده‌گیری سفارشی (هر خط یک الگوی',
             ignorePatternsPlaceholder: '\\d{4}-\\d{2}-\\d{2} :مثال',
             ignoreRemoveLines: 'حذف خطوط منطبق',
@@ -135,12 +213,19 @@ document.addEventListener('DOMContentLoaded', () => {
             collapseUnchanged: 'جمع‌کردن خطوط بدون تغییر',
             wrapLines: 'شکستن خطوط بلند',
             foldShowLines: 'نمایش {count} خط بدون تغییر پنهان‌شده',
+            loadMoreRows: 'نمایش {count} ردیف بیشتر ({remaining} ردیف برای حفظ کارایی پنهان شده)',
             copyDiff: 'کپی تفاوت‌ها',
             copyDiffDone: '!کپی شد',
             downloadDiff: 'دانلود .diff',
+            exportHtmlReport: 'خروجی گزارش HTML',
+            printPdf: 'چاپ / ذخیره به‌صورت PDF',
             shareLink: 'اشتراک‌گذاری لینک',
             shareLinkCopied: '!لینک کپی شد',
             shareLinkManualCopy: ':این لینک را برای اشتراک‌گذاری مقایسه کپی کنید',
+            copyLineManual: ':این خط را کپی کنید',
+            searchInDiff: '...جست‌وجو در نتیجه',
+            searchNoMatches: 'موردی یافت نشد',
+            searchMatchCount: '{current}/{total}',
             copyDiffManualCopy: ':این تفاوت‌ها را کپی کنید',
             shareLinkTooLong: '.توجه: این لینک نسبتاً طولانی است و ممکن است در همه‌جا کار نکند (مثلاً برخی اپ‌های پیام‌رسان لینک‌های طولانی را کوتاه می‌کنند)',
             shareLoadFailed: '.بارگذاری مقایسه از این لینک ممکن نشد (ممکن است خراب باشد یا فرمت پشتیبانی‌نشده داشته باشد)',
@@ -150,36 +235,67 @@ document.addEventListener('DOMContentLoaded', () => {
             linesLabel: 'خطوط',
             statsSummary: 'حذف‌شده {removed} \u00b7 افزوده‌شده {added}',
             uploadTooLarge: '.(حداکثر ۲ مگابایت) حجم فایل برای بارگذاری زیاد است',
-            uploadFailed: '.خواندن این فایل ممکن نشد'
+            uploadFailed: '.خواندن این فایل ممکن نشد',
+            navCompare: 'مقایسه',
+            navHistory: 'تاریخچه',
+            navSettings: 'تنظیمات',
+            navBatch: 'مقایسهٔ دسته‌ای',
+            batchTitle: 'مقایسهٔ دسته‌ای فایل‌ها',
+            batchOriginalFiles: 'فایل‌های اصلی',
+            batchModifiedFiles: 'فایل‌های تغییریافته',
+            batchRun: 'اجرای مقایسهٔ دسته‌ای',
+            batchHint: '.فایل‌ها بر اساس نام تطبیق داده می‌شوند. فایلی که فقط در یک طرف باشد، کامل اضافه‌شده یا حذف‌شده نمایش داده می‌شود',
+            statTotalRuns: 'مقایسه‌های انجام‌شده',
+            statLinesAdded: 'خطوط افزوده‌شده',
+            statLinesRemoved: 'خطوط حذف‌شده',
+            statTopLanguage: 'پراستفاده‌ترین زبان',
+            statAvgSimilarity: 'میانگین شباهت',
+            exportHistory: 'خروجی گرفتن',
+            importHistory: 'بارگذاری',
+            importSuccess: '!بارگذاری شد',
+            importFailed: 'بارگذاری ناموفق بود',
+            historyTitle: 'تاریخچه مقایسه‌ها',
+            clearHistory: 'پاک‌کردن تاریخچه',
+            historyEmpty: '.هنوز مقایسه‌ای انجام نشده. از تب مقایسه شروع کنید',
+            historyRestore: 'بازیابی',
+            historyDelete: 'حذف',
+            settingsTitle: 'تنظیمات',
+            settingsAppearance: 'ظاهر برنامه',
+            settingsAppearanceHint: '.تم و زبان رابط کاربری را از نوار بالا تغییر دهید',
+            settingsResetTitle: 'بازنشانی داده‌های محلی',
+            settingsResetHint: '.تنظیمات ذخیره‌شده و تاریخچه مقایسه‌ها را در این مرورگر پاک می‌کند',
+            settingsResetButton: 'بازنشانی داده‌ها',
+            settingsAboutTitle: 'درباره',
+            settingsAboutHint: '.CodeCompare یک ابزار مقایسه کد اوپن‌سورس و کاملاً سمت کاربر است',
+            resetConfirm: '.این کار تمام تنظیمات ذخیره‌شده و تاریخچه مقایسه‌ها را پاک می‌کند. ادامه می‌دهید؟'
         }
     };
 
-    // === Application State ===
     const state = {
         language: 'javascript',
         uiLang: 'en',
         diffView: 'unified',
         collapseUnchanged: true,
         wrapLines: false,
+        liveDiff: false,
+        detectMoved: false,
         ignorePatterns: [],
         ignoreRulesMode: 'removeLines',
-        isDarkTheme: window.matchMedia('(prefers-color-scheme: light)').matches ? false : true,
+        isDarkTheme: (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? false : true,
+        syntaxTheme: 'auto',
         plugins: {
-            // Display Plugins (applied via Prism.highlight()'s hook pipeline, per-line,
-            // in both Unified and Split views)
             'show-invisibles': false, 'autolinker': true,
             'match-braces': true, 'inline-color': false, 'previewers': true,
             'command-line': false,
-            // Processing Plugins
             'normalize-whitespace': false,
+            'ignore-blank-lines': false,
             'ignore-case': false
         }
     };
 
-    // === Initialization ===
     function init() {
         if (Prism.plugins && Prism.plugins.autoloader) {
-            Prism.plugins.autoloader.languages_path = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/components/';
+            Prism.plugins.autoloader.languages_path = 'lib/prism/components/';
         }
         loadSettings();
         setupEventListeners();
@@ -188,23 +304,29 @@ document.addEventListener('DOMContentLoaded', () => {
         updateLineCounts();
         updatePluginCheckboxes();
         applyTheme();
+        if (syntaxThemeSelect) syntaxThemeSelect.value = state.syntaxTheme;
         applyUiLanguage();
         syncViewToggleButtons();
         collapseUnchangedToggle.checked = state.collapseUnchanged;
         wrapLinesToggle.checked = state.wrapLines;
+        if (liveDiffToggle) liveDiffToggle.checked = state.liveDiff;
+        if (detectMovedToggle) detectMovedToggle.checked = state.detectMoved;
         diffOutputContainer.classList.toggle('wrap-lines', state.wrapLines);
         ignorePatternsInput.value = state.ignorePatterns.join('\n');
         ignoreRulesMode.value = state.ignoreRulesMode;
+        renderIgnorePresetOptions();
         registerServiceWorker();
         loadSharedComparisonFromUrl();
     }
 
-    // === Persistence ===
     function loadSettings() {
         try {
             const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
             if (saved && typeof saved === 'object') {
                 if (typeof saved.isDarkTheme === 'boolean') state.isDarkTheme = saved.isDarkTheme;
+                if (typeof saved.syntaxTheme === 'string' && PRISM_THEMES.hasOwnProperty(saved.syntaxTheme)) {
+                    state.syntaxTheme = saved.syntaxTheme;
+                }
                 if (saved.plugins && typeof saved.plugins === 'object') {
                     Object.assign(state.plugins, saved.plugins);
                 }
@@ -213,13 +335,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (saved.diffView === 'unified' || saved.diffView === 'split') state.diffView = saved.diffView;
                 if (typeof saved.collapseUnchanged === 'boolean') state.collapseUnchanged = saved.collapseUnchanged;
                 if (typeof saved.wrapLines === 'boolean') state.wrapLines = saved.wrapLines;
+                if (typeof saved.liveDiff === 'boolean') state.liveDiff = saved.liveDiff;
+                if (typeof saved.detectMoved === 'boolean') state.detectMoved = saved.detectMoved;
                 if (Array.isArray(saved.ignorePatterns)) state.ignorePatterns = saved.ignorePatterns;
                 if (saved.ignoreRulesMode === 'removeLines' || saved.ignoreRulesMode === 'stripMatches') {
                     state.ignoreRulesMode = saved.ignoreRulesMode;
                 }
             }
         } catch (err) {
-            // Corrupt or unavailable storage (e.g. private browsing) -> ignore and use defaults
             console.warn('Could not load saved settings:', err);
         }
     }
@@ -228,12 +351,15 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify({
                 isDarkTheme: state.isDarkTheme,
+                syntaxTheme: state.syntaxTheme,
                 plugins: state.plugins,
                 language: state.language,
                 uiLang: state.uiLang,
                 diffView: state.diffView,
                 collapseUnchanged: state.collapseUnchanged,
                 wrapLines: state.wrapLines,
+                liveDiff: state.liveDiff,
+                detectMoved: state.detectMoved,
                 ignorePatterns: state.ignorePatterns,
                 ignoreRulesMode: state.ignoreRulesMode
             }));
@@ -242,7 +368,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // === i18n helpers ===
     function t(key, vars) {
         const dict = translations[state.uiLang] || translations.en;
         let text = dict[key] !== undefined ? dict[key] : (translations.en[key] || key);
@@ -279,12 +404,51 @@ document.addEventListener('DOMContentLoaded', () => {
         saveSettings();
     }
 
-    // === Event Listeners Setup ===
     function setupEventListeners() {
         compareBtn.addEventListener('click', runComparison);
+        if (swapBtn) swapBtn.addEventListener('click', swapCode);
+        if (shortcutsHelpBtn) shortcutsHelpBtn.addEventListener('click', showShortcutsHelp);
+        if (detectLanguageBtn) {
+            detectLanguageBtn.addEventListener('click', () => {
+                const sample = originalCodeEl.value || modifiedCodeEl.value;
+                const guessed = guessLanguage(sample);
+                if (guessed && SUPPORTED_LANGUAGES[guessed]) {
+                    selectLanguage(guessed);
+                }
+            });
+        }
         formatJsonBtn.addEventListener('click', formatBothAsJson);
         originalCodeEl.addEventListener('input', updateLineCounts);
         modifiedCodeEl.addEventListener('input', updateLineCounts);
+
+        let liveDiffTimer = null;
+        const scheduleLiveDiff = () => {
+            if (!state.liveDiff) return;
+            clearTimeout(liveDiffTimer);
+            liveDiffTimer = setTimeout(() => {
+                if (originalCodeEl.value !== '' || modifiedCodeEl.value !== '') {
+                    runComparison();
+                }
+            }, 500);
+        };
+        originalCodeEl.addEventListener('input', scheduleLiveDiff);
+        modifiedCodeEl.addEventListener('input', scheduleLiveDiff);
+        if (liveDiffToggle) {
+            liveDiffToggle.addEventListener('change', () => {
+                state.liveDiff = liveDiffToggle.checked;
+                saveSettings();
+                if (state.liveDiff) scheduleLiveDiff();
+            });
+        }
+        if (detectMovedToggle) {
+            detectMovedToggle.addEventListener('change', () => {
+                state.detectMoved = detectMovedToggle.checked;
+                saveSettings();
+                if (diffOutputContainer.style.display !== 'none') {
+                    runComparison();
+                }
+            });
+        }
 
         const compareShortcut = e => {
             if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
@@ -295,7 +459,44 @@ document.addEventListener('DOMContentLoaded', () => {
         originalCodeEl.addEventListener('keydown', compareShortcut);
         modifiedCodeEl.addEventListener('keydown', compareShortcut);
 
+        document.addEventListener('keydown', e => {
+            if (e.altKey && e.key === 'ArrowDown') {
+                e.preventDefault();
+                jumpToChange(1);
+            } else if (e.altKey && e.key === 'ArrowUp') {
+                e.preventDefault();
+                jumpToChange(-1);
+            } else if (e.key === 'Escape' && shortcutsModal && !shortcutsModal.hidden) {
+                hideShortcutsHelp();
+            }
+        });
+
+        if (shortcutsModalClose) shortcutsModalClose.addEventListener('click', hideShortcutsHelp);
+        if (diffSearchInput) {
+            diffSearchInput.addEventListener('input', applyDiffSearch);
+            diffSearchInput.addEventListener('keydown', e => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    goToSearchMatch(e.shiftKey ? -1 : 1);
+                }
+            });
+        }
+        if (diffSearchPrevBtn) diffSearchPrevBtn.addEventListener('click', () => goToSearchMatch(-1));
+        if (diffSearchNextBtn) diffSearchNextBtn.addEventListener('click', () => goToSearchMatch(1));
+        if (shortcutsModal) {
+            shortcutsModal.addEventListener('click', e => {
+                if (e.target === shortcutsModal) hideShortcutsHelp();
+            });
+        }
+
         themeSwitcher.addEventListener('click', toggleTheme);
+        if (syntaxThemeSelect) {
+            syntaxThemeSelect.addEventListener('change', () => {
+                state.syntaxTheme = syntaxThemeSelect.value;
+                applyTheme();
+                saveSettings();
+            });
+        }
         themeSwitcher.addEventListener('keydown', e => {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
@@ -322,8 +523,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const plugin = toggle.dataset.plugin;
                 state.plugins[plugin] = toggle.checked;
                 saveSettings();
-                // Only re-run the diff if a comparison is already being shown;
-                // otherwise toggling a plugin on the input screen shouldn't jump to the diff view.
                 if (diffOutputContainer.style.display !== 'none') {
                     runComparison();
                 }
@@ -342,6 +541,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         copyDiffBtn.addEventListener('click', copyDiffToClipboard);
         downloadDiffBtn.addEventListener('click', downloadDiffFile);
+        if (exportHtmlBtn) exportHtmlBtn.addEventListener('click', exportHtmlReport);
+        if (printPdfBtn) printPdfBtn.addEventListener('click', () => window.print());
         shareLinkBtn.addEventListener('click', generateAndCopyShareLink);
 
         viewUnifiedBtn.addEventListener('click', () => setDiffView('unified'));
@@ -370,6 +571,46 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         ignorePatternsInput.addEventListener('change', onIgnoreRulesChange);
         ignoreRulesMode.addEventListener('change', onIgnoreRulesChange);
+
+        if (ignorePresetSelect) {
+            ignorePresetSelect.addEventListener('change', applySelectedPreset);
+        }
+        if (ignorePresetSaveBtn) {
+            ignorePresetSaveBtn.addEventListener('click', saveCurrentAsPreset);
+        }
+        if (ignorePresetDeleteBtn) {
+            ignorePresetDeleteBtn.addEventListener('click', deleteSelectedPreset);
+        }
+
+        diffOutputContainer.addEventListener('click', e => {
+            const loadMoreBtn = e.target.closest('[data-load-more]');
+            if (loadMoreBtn) {
+                if (loadMoreBtn.dataset.loadMore === 'unified') {
+                    unifiedRenderLimit += RENDER_CHUNK_SIZE;
+                } else {
+                    splitRenderLimit += RENDER_CHUNK_SIZE;
+                }
+                renderDiffOutput();
+                return;
+            }
+
+            const copyBtn = e.target.closest('.copy-line-btn');
+            if (copyBtn) {
+                const lineEl = copyBtn.closest('.unified-line, .split-line');
+                const codeEl = lineEl && lineEl.querySelector('.unified-line-code, .split-line-code');
+                if (!codeEl) return;
+                const text = codeEl.textContent;
+                const flash = ok => {
+                    copyBtn.textContent = ok ? '\u2713' : '\u2717';
+                    setTimeout(() => { copyBtn.textContent = '\u2327'; }, 900);
+                };
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(() => flash(true)).catch(() => flash(false));
+                } else {
+                    window.prompt(t('copyLineManual'), text);
+                }
+            }
+        });
 
         diffOutputLinesEl.addEventListener('click', e => {
             const divider = e.target.closest('.fold-divider');
@@ -407,10 +648,9 @@ document.addEventListener('DOMContentLoaded', () => {
         comparisonContainer.style.display = '';
     }
 
-    // === File upload ===
     function handleFileUpload(inputEl, targetTextarea) {
         const file = inputEl.files && inputEl.files[0];
-        inputEl.value = ''; // allow re-selecting the same file later
+        inputEl.value = '';
         if (!file) return;
         loadFileIntoTextarea(file, targetTextarea);
     }
@@ -443,7 +683,6 @@ document.addEventListener('DOMContentLoaded', () => {
         reader.readAsText(file);
     }
 
-    // === JSON formatting ===
     function formatBothAsJson() {
         const sides = [
             { el: originalCodeEl, label: t('originalCode') },
@@ -462,7 +701,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const failed = results.filter(r => !r.ok);
 
         if (succeeded.length > 0) {
-            // Formatting JSON only makes sense paired with JSON syntax highlighting.
             state.language = 'json';
             populateLanguages();
             saveSettings();
@@ -499,9 +737,163 @@ document.addEventListener('DOMContentLoaded', () => {
         formatJsonStatusTimer = setTimeout(() => { formatJsonStatusEl.textContent = ''; }, 6000);
     }
 
-    // === Core Application Logic ===
+    function swapCode() {
+        const temp = originalCodeEl.value;
+        originalCodeEl.value = modifiedCodeEl.value;
+        modifiedCodeEl.value = temp;
+        updateLineCounts();
+        if (diffOutputContainer.style.display !== 'none') {
+            runComparison();
+        }
+    }
+
+    function showShortcutsHelp() {
+        const isFa = state.uiLang === 'fa';
+        const rows = [
+            ['Ctrl/⌘ + Enter', isFa ? 'اجرای مقایسه' : 'Run comparison'],
+            ['Alt/⌥ + \u2193', isFa ? 'رفتن به تغییر بعدی' : 'Jump to next change'],
+            ['Alt/⌥ + \u2191', isFa ? 'رفتن به تغییر قبلی' : 'Jump to previous change'],
+            ['Enter', isFa ? '(در کادر جست‌وجو) رفتن به مورد بعدی' : 'Next search match (in search box)'],
+            ['Shift + Enter', isFa ? '(در کادر جست‌وجو) رفتن به مورد قبلی' : 'Previous search match (in search box)'],
+            ['Esc', isFa ? 'بستن این پنجره' : 'Close this dialog']
+        ];
+        shortcutsModalBody.innerHTML = '';
+        rows.forEach(([key, desc]) => {
+            const row = document.createElement('div');
+            row.className = 'shortcut-row';
+            const kbd = document.createElement('kbd');
+            kbd.textContent = key;
+            const span = document.createElement('span');
+            span.textContent = desc;
+            row.appendChild(kbd);
+            row.appendChild(span);
+            shortcutsModalBody.appendChild(row);
+        });
+        shortcutsModal.hidden = false;
+    }
+
+    function hideShortcutsHelp() {
+        shortcutsModal.hidden = true;
+    }
+
+    function getChangeGroupStarts() {
+        if (!lastDiffEntries) return [];
+        if (state.diffView === 'split') {
+            const rows = CodeCompareDiff.buildSideBySideRows(lastDiffEntries);
+            const starts = [];
+            let inGroup = false;
+            rows.forEach((row, index) => {
+                const isChange = row.left.type !== 'unchanged' || row.right.type !== 'unchanged';
+                if (isChange) {
+                    if (!inGroup) starts.push(index);
+                    inGroup = true;
+                } else {
+                    inGroup = false;
+                }
+            });
+            return starts;
+        }
+        const starts = [];
+        let inGroup = false;
+        lastDiffEntries.forEach((entry, index) => {
+            if (entry.type !== 'unchanged') {
+                if (!inGroup) starts.push(index);
+                inGroup = true;
+            } else {
+                inGroup = false;
+            }
+        });
+        return starts;
+    }
+
+    let diffSearchMatches = [];
+    let diffSearchCurrent = -1;
+
+    function applyDiffSearch() {
+        if (!diffSearchInput) return;
+        const query = diffSearchInput.value.trim().toLowerCase();
+        const container = state.diffView === 'split' ? diffSplitView : diffOutputLinesEl;
+        const rows = container.querySelectorAll('.unified-line, .split-line');
+        rows.forEach(row => row.classList.remove('search-match', 'search-match-current'));
+
+        if (!query) {
+            diffSearchMatches = [];
+            diffSearchCurrent = -1;
+            if (diffSearchCountEl) diffSearchCountEl.textContent = '';
+            return;
+        }
+
+        diffSearchMatches = Array.from(rows).filter(row => {
+            const codeEl = row.querySelector('.unified-line-code, .split-line-code');
+            return codeEl && codeEl.textContent.toLowerCase().includes(query);
+        });
+        diffSearchMatches.forEach(row => row.classList.add('search-match'));
+
+        if (diffSearchMatches.length === 0) {
+            diffSearchCurrent = -1;
+            if (diffSearchCountEl) diffSearchCountEl.textContent = t('searchNoMatches');
+            return;
+        }
+
+        diffSearchCurrent = 0;
+        highlightCurrentSearchMatch();
+    }
+
+    function highlightCurrentSearchMatch() {
+        diffSearchMatches.forEach(row => row.classList.remove('search-match-current'));
+        if (diffSearchCurrent < 0 || diffSearchMatches.length === 0) return;
+        const row = diffSearchMatches[diffSearchCurrent];
+        row.classList.add('search-match-current');
+        if (row.scrollIntoView) row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        if (diffSearchCountEl) {
+            diffSearchCountEl.textContent = t('searchMatchCount', { current: diffSearchCurrent + 1, total: diffSearchMatches.length });
+        }
+    }
+
+    function goToSearchMatch(direction) {
+        if (diffSearchMatches.length === 0) return;
+        diffSearchCurrent = (diffSearchCurrent + direction + diffSearchMatches.length) % diffSearchMatches.length;
+        highlightCurrentSearchMatch();
+    }
+
+    function jumpToChange(direction) {
+        if (diffOutputContainer.style.display === 'none') return;
+        const starts = getChangeGroupStarts();
+        if (starts.length === 0) return;
+
+        const attr = state.diffView === 'split' ? 'data-row-index' : 'data-entry-index';
+        const container = state.diffView === 'split' ? diffSplitView : diffOutputLinesEl;
+        const findEl = index => container.querySelector(`[${attr}="${index}"]`);
+
+        let targetIndex;
+        if (direction > 0) {
+            targetIndex = starts.find(i => {
+                const el = findEl(i);
+                return el && el.getBoundingClientRect().top > 60;
+            });
+            if (targetIndex === undefined) targetIndex = starts[starts.length - 1];
+        } else {
+            const reversed = [...starts].reverse();
+            targetIndex = reversed.find(i => {
+                const el = findEl(i);
+                return el && el.getBoundingClientRect().top < -10;
+            });
+            if (targetIndex === undefined) targetIndex = starts[0];
+        }
+
+        const targetEl = findEl(targetIndex);
+        if (targetEl && targetEl.scrollIntoView) {
+            targetEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            targetEl.classList.add('jump-highlight');
+            setTimeout(() => targetEl.classList.remove('jump-highlight'), 900);
+        }
+    }
+
     function runComparison() {
         if (originalCodeEl.value === '' && modifiedCodeEl.value === '') return;
+
+        unifiedRenderLimit = RENDER_CHUNK_SIZE;
+        splitRenderLimit = RENDER_CHUNK_SIZE;
 
         diffOutputContainer.style.display = 'block';
         comparisonContainer.style.display = 'none';
@@ -509,8 +901,6 @@ document.addEventListener('DOMContentLoaded', () => {
         let originalText = originalCodeEl.value;
         let modifiedText = modifiedCodeEl.value;
 
-        // Apply processing plugins before diffing (guard against the plugin script failing to load,
-        // e.g. no network/CDN blocked, so one missing script doesn't break the whole comparison)
         if (state.plugins['normalize-whitespace']) {
             const normalizer = Prism.plugins && Prism.plugins.NormalizeWhitespace;
             if (normalizer) {
@@ -530,9 +920,88 @@ document.addEventListener('DOMContentLoaded', () => {
         lastDiffEntries = CodeCompareDiff.computeLineDiff(originalText, modifiedText, {
             ignoreCase: !!state.plugins['ignore-case']
         });
+        if (state.plugins['ignore-blank-lines']) {
+            lastDiffEntries = CodeCompareDiff.applyIgnoreBlankLines(lastDiffEntries);
+        }
+        if (state.detectMoved) {
+            lastDiffEntries = CodeCompareDiff.detectMovedBlocks(lastDiffEntries);
+        }
         expandedUnifiedFolds = new Set();
         expandedSplitFolds = new Set();
+        const historyStats = CodeCompareDiff.computeStats(lastDiffEntries);
+        if (window.CodeCompareDashboard) {
+            window.CodeCompareDashboard.recordRun({
+                language: state.language,
+                added: historyStats.added,
+                removed: historyStats.removed,
+                similarity: historyStats.similarity,
+                originalSnippet: originalCodeEl.value.slice(0, 4000),
+                modifiedSnippet: modifiedCodeEl.value.slice(0, 4000)
+            });
+        }
         ensureLanguageLoaded(state.language, renderDiffOutput);
+    }
+
+    const IGNORE_PRESETS_KEY = 'codecompare-ignore-presets';
+
+    function loadIgnorePresets() {
+        try {
+            const raw = JSON.parse(localStorage.getItem(IGNORE_PRESETS_KEY));
+            return Array.isArray(raw) ? raw : [];
+        } catch {
+            return [];
+        }
+    }
+
+    function saveIgnorePresets(list) {
+        try {
+            localStorage.setItem(IGNORE_PRESETS_KEY, JSON.stringify(list));
+        } catch {
+        }
+    }
+
+    function renderIgnorePresetOptions(selectedName) {
+        if (!ignorePresetSelect) return;
+        const presets = loadIgnorePresets();
+        const placeholder = ignorePresetSelect.options[0];
+        ignorePresetSelect.innerHTML = '';
+        ignorePresetSelect.appendChild(placeholder);
+        presets.forEach(preset => {
+            const opt = document.createElement('option');
+            opt.value = preset.name;
+            opt.textContent = preset.name;
+            ignorePresetSelect.appendChild(opt);
+        });
+        ignorePresetSelect.value = selectedName && presets.some(p => p.name === selectedName) ? selectedName : '';
+    }
+
+    function saveCurrentAsPreset() {
+        const isFa = state.uiLang === 'fa';
+        const name = window.prompt(isFa ? 'نامی برای این پریست وارد کنید:' : 'Name this preset:');
+        if (!name || !name.trim()) return;
+        const trimmedName = name.trim();
+        const presets = loadIgnorePresets().filter(p => p.name !== trimmedName);
+        presets.push({ name: trimmedName, patterns: ignorePatternsInput.value, mode: ignoreRulesMode.value });
+        saveIgnorePresets(presets);
+        renderIgnorePresetOptions(trimmedName);
+    }
+
+    function deleteSelectedPreset() {
+        if (!ignorePresetSelect || !ignorePresetSelect.value) return;
+        const presets = loadIgnorePresets().filter(p => p.name !== ignorePresetSelect.value);
+        saveIgnorePresets(presets);
+        renderIgnorePresetOptions();
+    }
+
+    function applySelectedPreset() {
+        const presets = loadIgnorePresets();
+        const preset = presets.find(p => p.name === ignorePresetSelect.value);
+        if (!preset) return;
+        ignorePatternsInput.value = preset.patterns;
+        ignoreRulesMode.value = preset.mode;
+        state.ignorePatterns = preset.patterns.split('\n');
+        state.ignoreRulesMode = preset.mode;
+        saveSettings();
     }
 
     function showIgnoreRulesErrors(errors) {
@@ -540,7 +1009,6 @@ document.addEventListener('DOMContentLoaded', () => {
             ignoreRulesStatusEl.textContent = '';
             return;
         }
-        // De-duplicate (the same bad pattern is checked against both sides).
         const seen = new Set();
         const unique = errors.filter(e => {
             if (seen.has(e.pattern)) return false;
@@ -553,8 +1021,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderDiffOutput() {
         if (!lastDiffEntries) return;
 
-        // This hidden buffer only exists so Copy Diff / Download .diff have
-        // exact plain text to work with - it is never shown to the user.
         diffOutputEl.textContent = CodeCompareDiff.formatDiffText(lastDiffEntries);
 
         const { added, removed } = CodeCompareDiff.computeStats(lastDiffEntries);
@@ -569,6 +1035,7 @@ document.addEventListener('DOMContentLoaded', () => {
             diffOutputLinesEl.style.display = '';
             renderUnifiedLines(lastDiffEntries);
         }
+        applyDiffSearch();
     }
 
     function escapeHtml(str) {
@@ -603,31 +1070,42 @@ document.addEventListener('DOMContentLoaded', () => {
         return `<div class="${className}" role="button" tabindex="0" data-fold-id="${foldId}"><span class="fold-icon" aria-hidden="true">\u22ef</span><span>${label}</span></div>`;
     }
 
-    /**
-     * Renders the Unified view as one real DOM element per line (mirroring the
-     * Split view's approach), each individually syntax-highlighted via
-     * Prism.highlight() and separated by a CSS border - not a computed
-     * background pattern, so the divider between lines can never drift out of
-     * sync with the text, regardless of line-wrapping or folding state.
-     */
+    function loadMoreNoticeHtml(view, remaining) {
+        const label = t('loadMoreRows', { count: Math.min(remaining, RENDER_CHUNK_SIZE), remaining });
+        return `<div class="load-more-notice"><button type="button" class="compare-button secondary-button" data-load-more="${view}">${escapeHtml(label)}</button></div>`;
+    }
+
     function renderUnifiedLines(diffEntries) {
         const html = [];
         let lineNo = 0;
+        let attempted = 0;
+        let truncated = false;
 
         function renderRow(entry) {
             lineNo++;
+            attempted++;
+            if (attempted > unifiedRenderLimit) {
+                truncated = true;
+                return;
+            }
+            const entryIndex = lineNo - 1;
             const prefix = entry.type === 'added' ? '+' : entry.type === 'removed' ? '-' : '\u00a0';
+            const movedClass = entry.moved ? ' moved' : '';
+            const movedBadge = entry.moved ? '<span class="moved-badge" title="Moved code">\u21c4</span>' : '';
             html.push(
-                `<div class="unified-line type-${entry.type}">` +
+                `<div class="unified-line type-${entry.type}${movedClass}" data-entry-index="${entryIndex}">` +
                 `<span class="unified-line-num">${lineNo}</span>` +
                 `<span class="unified-line-prefix">${prefix}</span>` +
+                `${movedBadge}` +
                 `<code class="unified-line-code">${highlightLine(entry.line)}</code>` +
+                `<button type="button" class="copy-line-btn" tabindex="-1" aria-label="Copy line">\u2327</button>` +
                 `</div>`
             );
         }
 
         if (!state.collapseUnchanged) {
             diffEntries.forEach(renderRow);
+            if (truncated) html.push(loadMoreNoticeHtml('unified', attempted - unifiedRenderLimit));
             diffOutputLinesEl.innerHTML = html.join('');
             return;
         }
@@ -648,12 +1126,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 segment.items.forEach(renderRow);
                 return;
             }
-            // Rows stay hidden, but the line count must still account for them,
-            // or the next visible line number would look wrong.
             lineNo += segment.items.length;
             html.push(foldDividerHtml('fold-divider', foldIndex, segment.items.length));
         });
 
+        if (truncated) html.push(loadMoreNoticeHtml('unified', attempted - unifiedRenderLimit));
         diffOutputLinesEl.innerHTML = html.join('');
     }
 
@@ -663,14 +1140,21 @@ document.addEventListener('DOMContentLoaded', () => {
         let rightLineNo = 0;
         const leftHtml = [];
         const rightHtml = [];
+        let rowIndex = -1;
+        let attempted = 0;
+        let truncated = false;
 
         function renderRow(row) {
+            attempted++;
+            if (attempted > splitRenderLimit) {
+                truncated = true;
+                return;
+            }
+            rowIndex++;
+            const currentRowIndex = rowIndex;
             if (row.left.type !== 'empty') leftLineNo++;
             if (row.right.type !== 'empty') rightLineNo++;
 
-            // A replaced line (removed on the left, added on the right, same row) gets
-            // word-level highlighting so only the changed part of the line stands out,
-            // instead of coloring the whole line.
             const isReplacement = row.left.type === 'removed' && row.right.type === 'added';
             let leftCode;
             let rightCode;
@@ -684,21 +1168,30 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             leftHtml.push(
-                `<div class="split-line type-${row.left.type}">` +
+                `<div class="split-line type-${row.left.type}${row.left.moved ? ' moved' : ''}" data-row-index="${currentRowIndex}">` +
                 `<span class="split-line-num">${row.left.type !== 'empty' ? leftLineNo : ''}</span>` +
+                `${row.left.moved ? '<span class="moved-badge" title="Moved code">\u21c4</span>' : ''}` +
                 `<code class="split-line-code">${leftCode}</code>` +
+                `${row.left.type !== 'empty' ? '<button type="button" class="copy-line-btn" tabindex="-1" aria-label="Copy line">\u2327</button>' : ''}` +
                 `</div>`
             );
             rightHtml.push(
-                `<div class="split-line type-${row.right.type}">` +
+                `<div class="split-line type-${row.right.type}${row.right.moved ? ' moved' : ''}" data-row-index="${currentRowIndex}">` +
                 `<span class="split-line-num">${row.right.type !== 'empty' ? rightLineNo : ''}</span>` +
+                `${row.right.moved ? '<span class="moved-badge" title="Moved code">\u21c4</span>' : ''}` +
                 `<code class="split-line-code">${rightCode}</code>` +
+                `${row.right.type !== 'empty' ? '<button type="button" class="copy-line-btn" tabindex="-1" aria-label="Copy line">\u2327</button>' : ''}` +
                 `</div>`
             );
         }
 
         if (!state.collapseUnchanged) {
             rows.forEach(renderRow);
+            if (truncated) {
+                const notice = loadMoreNoticeHtml('split', attempted - splitRenderLimit);
+                leftHtml.push(notice);
+                rightHtml.push(notice);
+            }
             splitLeftEl.innerHTML = leftHtml.join('');
             splitRightEl.innerHTML = rightHtml.join('');
             return;
@@ -718,9 +1211,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 segment.items.forEach(renderRow);
                 return;
             }
-            // Rows stay hidden, but line numbers on either side of the fold must
-            // still account for them - otherwise the next visible line number
-            // would be wrong (it would look like those lines never existed).
             leftLineNo += segment.items.length;
             rightLineNo += segment.items.length;
             const divider = foldDividerHtml('split-fold-divider', foldIndex, segment.items.length);
@@ -728,6 +1218,11 @@ document.addEventListener('DOMContentLoaded', () => {
             rightHtml.push(divider);
         });
 
+        if (truncated) {
+            const notice = loadMoreNoticeHtml('split', attempted - splitRenderLimit);
+            leftHtml.push(notice);
+            rightHtml.push(notice);
+        }
         splitLeftEl.innerHTML = leftHtml.join('');
         splitRightEl.innerHTML = rightHtml.join('');
     }
@@ -781,6 +1276,56 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function exportHtmlReport() {
+        if (!lastDiffEntries) return;
+        const stats = CodeCompareDiff.computeStats(lastDiffEntries);
+        const rowsHtml = lastDiffEntries.map(entry => {
+            const prefix = entry.type === 'added' ? '+' : entry.type === 'removed' ? '-' : ' ';
+            return `<div class="row row-${entry.type}"><span class="prefix">${prefix}</span><code>${escapeHtml(entry.line)}</code></div>`;
+        }).join('');
+        const timestamp = new Date().toLocaleString();
+        const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CodeCompare Report</title>
+<style>
+    body { background:#282c34; color:#abb2bf; font-family:'Fira Code',Consolas,monospace; margin:0; padding:24px; }
+    h1 { font-size:16px; font-weight:600; margin:0 0 4px; color:#fff; }
+    .meta { color:#7f848e; font-size:12px; margin-bottom:18px; }
+    .stats { display:flex; gap:16px; margin-bottom:16px; font-size:13px; }
+    .stats span { background:#2c313a; border:1px solid #3e4451; border-radius:6px; padding:4px 10px; }
+    .diff { border:1px solid #3e4451; border-radius:8px; overflow:hidden; }
+    .row { display:flex; gap:10px; padding:2px 12px; white-space:pre-wrap; word-break:break-word; font-size:13px; line-height:1.6; }
+    .row-added { background:rgba(152,195,121,0.15); }
+    .row-removed { background:rgba(224,108,117,0.15); }
+    .prefix { width:14px; flex-shrink:0; opacity:0.7; }
+    .row-added .prefix { color:#98c379; }
+    .row-removed .prefix { color:#e06c75; }
+</style>
+</head>
+<body>
+    <h1>CodeCompare \u2014 Comparison Report</h1>
+    <div class="meta">${escapeHtml(timestamp)} \u2014 language: ${escapeHtml(state.language)}</div>
+    <div class="stats">
+        <span>+${stats.added}</span>
+        <span>-${stats.removed}</span>
+        <span>${stats.similarity}% similar</span>
+    </div>
+    <div class="diff">${rowsHtml}</div>
+</body>
+</html>`;
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'codecompare-report.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
     function downloadDiffFile() {
         const text = getUnifiedStyleDiff();
         const blob = new Blob([text], { type: 'text/plain' });
@@ -794,8 +1339,6 @@ document.addEventListener('DOMContentLoaded', () => {
         URL.revokeObjectURL(url);
     }
 
-    // A link this long is unlikely to survive being pasted into some chat apps
-    // or SMS, which silently truncate very long URLs; warn (non-blockingly) past this.
     const SHARE_LINK_WARN_LENGTH = 6000;
 
     async function generateAndCopyShareLink() {
@@ -823,9 +1366,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 await navigator.clipboard.writeText(url);
                 shareLinkBtn.textContent = t('shareLinkCopied');
                 restoreLabel();
-            } catch (err) {
-                // Clipboard write can fail (permissions, insecure context, etc.) -
-                // fall back to a manual-copy prompt so the link isn't just lost.
+            } catch {
                 window.prompt(t('shareLinkManualCopy'), url);
             }
         } else {
@@ -864,16 +1405,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // === UI & State Management ===
     function toggleTheme() {
         state.isDarkTheme = !state.isDarkTheme;
         applyTheme();
         saveSettings();
     }
 
+    const PRISM_THEMES = {
+        auto: null,
+        prism: 'prism',
+        okaidia: 'prism-okaidia',
+        dark: 'prism-dark',
+        tomorrow: 'prism-tomorrow',
+        twilight: 'prism-twilight',
+        solarizedlight: 'prism-solarizedlight',
+        coy: 'prism-coy',
+        funky: 'prism-funky'
+    };
+
     function applyTheme() {
-        const themeName = state.isDarkTheme ? 'prism-okaidia' : 'prism';
-        prismThemeLink.href = `https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/themes/${themeName}.min.css`;
+        const chosen = PRISM_THEMES[state.syntaxTheme];
+        const themeName = chosen || (state.isDarkTheme ? 'prism-okaidia' : 'prism');
+        prismThemeLink.href = `lib/prism/themes/${themeName}.min.css`;
         document.body.classList.toggle('light-theme', !state.isDarkTheme);
     }
 
@@ -886,10 +1439,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // A curated list of languages actually verified to exist as real Prism 1.30.0
-    // components. With the Autoloader plugin, languages beyond the default
-    // core bundle (markup/css/clike/javascript) aren't loaded until picked, so
-    // Prism.languages can't be introspected to build this list at startup.
     const SUPPORTED_LANGUAGES = {
         markup: 'HTML/XML', css: 'CSS', javascript: 'JavaScript', typescript: 'TypeScript',
         jsx: 'JSX', tsx: 'TSX', json: 'JSON', json5: 'JSON5', yaml: 'YAML', toml: 'TOML',
@@ -908,30 +1457,52 @@ document.addEventListener('DOMContentLoaded', () => {
         log: 'Log file', http: 'HTTP', apacheconf: 'Apache Config', plsql: 'PL/SQL'
     };
 
+    function selectLanguage(lang) {
+        state.language = lang;
+        langSearchInput.value = SUPPORTED_LANGUAGES[lang] || lang;
+        langOptionsContainer.classList.remove('visible');
+        saveSettings();
+        if (diffOutputContainer.style.display !== 'none') {
+            ensureLanguageLoaded(state.language, renderDiffOutput);
+        }
+    }
+
+    function guessLanguage(text) {
+        const sample = text.slice(0, 4000).trim();
+        if (!sample) return null;
+        const rules = [
+            [s => /^<\?php/.test(s), 'php'],
+            [s => /^#!.*\b(bash|sh|zsh)\b/m.test(s), 'bash'],
+            [s => /^\s*<!DOCTYPE html>|<html[\s>]|<\/(div|span|body|html)>/i.test(s), 'markup'],
+            [s => /^[\s\S]*\{[\s\S]*\}\s*$/.test(s) && /"[^"]+"\s*:/.test(s), 'json'],
+            [s => /^\s*(import|from)\s+[\w.]+\s+import\b|^\s*def\s+\w+\s*\(.*\):|^\s*print\(/m.test(s), 'python'],
+            [s => /^\s*(public|private|protected)\s+(static\s+)?(class|void|int|String)\b/m.test(s), 'java'],
+            [s => /^\s*fn\s+\w+\s*\(.*\)\s*(->\s*\w+)?\s*\{|^\s*let\s+mut\b/m.test(s), 'rust'],
+            [s => /^\s*func\s+\w+\s*\(.*\)\s*\{|^\s*package\s+main\b/m.test(s), 'go'],
+            [s => /^\s*#include\s*<\w+(\.h)?>/m.test(s), 'cpp'],
+            [s => /^\s*using\s+System;|^\s*namespace\s+\w+/m.test(s), 'csharp'],
+            [s => /^\s*SELECT\s+.+\s+FROM\s+/im.test(s), 'sql'],
+            [s => /:\s*(string|number|boolean)\b|^\s*interface\s+\w+/m.test(s), 'typescript'],
+            [s => /^\s*(const|let|var)\s+\w+\s*=|=>|function\s*\(/m.test(s), 'javascript'],
+            [s => /^\s*[.#]?[\w-]+\s*\{[\s\S]*:[\s\S]*\}/m.test(s), 'css'],
+            [s => /^---\n[\s\S]*?\n---/m.test(s), 'yaml'],
+            [s => /^\s*\$\w+\s*=|^\s*def\s+\w+.*\n[\s\S]*\bend\b/m.test(s), 'ruby']
+        ];
+        for (const [test, lang] of rules) {
+            if (test(sample)) return lang;
+        }
+        return null;
+    }
+
     function populateLanguages() {
         const languages = Object.keys(SUPPORTED_LANGUAGES).sort((a, b) => SUPPORTED_LANGUAGES[a].localeCompare(SUPPORTED_LANGUAGES[b]));
         langOptionsContainer.innerHTML = languages.map(lang => `<div data-lang="${lang}">${SUPPORTED_LANGUAGES[lang]}</div>`).join('');
         langOptionsContainer.querySelectorAll('div').forEach(el => {
-            el.addEventListener('click', () => {
-                state.language = el.dataset.lang;
-                langSearchInput.value = el.textContent;
-                langOptionsContainer.classList.remove('visible');
-                saveSettings();
-                if (diffOutputContainer.style.display !== 'none') {
-                    ensureLanguageLoaded(state.language, renderDiffOutput);
-                }
-            });
+            el.addEventListener('click', () => selectLanguage(el.dataset.lang));
         });
         langSearchInput.value = SUPPORTED_LANGUAGES[state.language] || state.language;
     }
 
-    /**
-     * Makes sure a language's grammar is actually loaded before we highlight
-     * with it directly via Prism.highlight() (used by the Split view), since
-     * that path doesn't go through Prism's own highlightElement-based
-     * autoloading hook. Falls back to just calling the callback if the
-     * autoloader isn't available or the language is already loaded.
-     */
     function ensureLanguageLoaded(lang, callback) {
         if (Prism.languages[lang]) {
             callback();
@@ -961,7 +1532,6 @@ document.addEventListener('DOMContentLoaded', () => {
         modifiedCodeEl.value = `body {\n  font-family: 'Helvetica', sans-serif;\n  color: #444;\n  background-color: #f0f0f0;\n}`;
     }
 
-    // === PWA ===
     function registerServiceWorker() {
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('service-worker.js').catch(err => {

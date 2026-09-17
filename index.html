@@ -10,28 +10,92 @@
     <link rel="apple-touch-icon" href="icons/icon-192.png">
     <link rel="manifest" href="manifest.json">
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/themes/prism-okaidia.min.css" id="prism-theme-link">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/plugins/show-invisibles/prism-show-invisibles.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/plugins/match-braces/prism-match-braces.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/plugins/inline-color/prism-inline-color.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/plugins/command-line/prism-command-line.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/plugins/previewers/prism-previewers.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/plugins/autolinker/prism-autolinker.min.css">
+    <link rel="stylesheet" href="lib/prism/themes/prism-okaidia.min.css" id="prism-theme-link">
+    <link rel="stylesheet" href="lib/prism/plugins/show-invisibles/prism-show-invisibles.min.css">
+    <link rel="stylesheet" href="lib/prism/plugins/match-braces/prism-match-braces.min.css">
+    <link rel="stylesheet" href="lib/prism/plugins/inline-color/prism-inline-color.min.css">
+    <link rel="stylesheet" href="lib/prism/plugins/command-line/prism-command-line.min.css">
+    <link rel="stylesheet" href="lib/prism/plugins/previewers/prism-previewers.min.css">
+    <link rel="stylesheet" href="lib/prism/plugins/autolinker/prism-autolinker.min.css">
+
+    <link rel="stylesheet" href="fonts/vazirmatn/400.css">
+    <link rel="stylesheet" href="fonts/vazirmatn/500.css">
+    <link rel="stylesheet" href="fonts/vazirmatn/600.css">
+    <link rel="stylesheet" href="fonts/vazirmatn/700.css">
+    <link rel="stylesheet" href="fonts/fira-code/400.css">
+    <link rel="stylesheet" href="fonts/fira-code/700.css">
 
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&family=Fira+Code&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <header class="main-header">
-            <div class="logo"><h1>CodeCompare</h1><span>by GeekNeuron</span></div>
-            <div class="header-actions">
-                <button id="lang-toggle-btn" class="icon-button" type="button" aria-label="Switch language / تغییر زبان">EN / فا</button>
-                <div id="theme-switcher" role="button" tabindex="0" aria-label="Toggle light/dark theme" title="Click to switch theme" class="icon-button theme-switcher-btn">🌓</div>
-                <div class="repo-link"><a href="https://github.com/GeekNeuron/CodeCompare" target="_blank" data-i18n="viewOnGithub">View on GitHub</a></div>
+    <div class="app-shell">
+        <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+        <aside class="sidebar" id="app-sidebar">
+            <div class="sidebar-brand">
+                <span class="brand-mark">&lt;/&gt;</span>
+                <div class="brand-text">
+                    <h1>CodeCompare</h1>
+                    <span>by GeekNeuron</span>
+                </div>
             </div>
-        </header>
+            <nav class="sidebar-nav" aria-label="Primary">
+                <button type="button" class="sidebar-link is-active" data-view="compare">
+                    <span class="sidebar-link-icon" aria-hidden="true">⇄</span>
+                    <span data-i18n="navCompare">Compare</span>
+                </button>
+                <button type="button" class="sidebar-link" data-view="history">
+                    <span class="sidebar-link-icon" aria-hidden="true">🕘</span>
+                    <span data-i18n="navHistory">History</span>
+                </button>
+                <button type="button" class="sidebar-link" data-view="batch">
+                    <span class="sidebar-link-icon" aria-hidden="true">📚</span>
+                    <span data-i18n="navBatch">Batch Compare</span>
+                </button>
+                <button type="button" class="sidebar-link" data-view="settings">
+                    <span class="sidebar-link-icon" aria-hidden="true">⚙</span>
+                    <span data-i18n="navSettings">Settings</span>
+                </button>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="https://github.com/GeekNeuron/CodeCompare" target="_blank" class="repo-link" data-i18n="viewOnGithub">View on GitHub</a>
+            </div>
+        </aside>
 
+        <div class="app-main">
+            <header class="app-topbar">
+                <button type="button" id="sidebar-toggle-btn" class="icon-button sidebar-toggle-btn" aria-label="Toggle menu" aria-expanded="false" aria-controls="app-sidebar">☰</button>
+                <h2 id="view-title" class="view-title" data-i18n="navCompare">Compare</h2>
+                <div class="header-actions">
+                    <button id="lang-toggle-btn" class="icon-button" type="button" aria-label="Switch language / تغییر زبان">EN / فا</button>
+                    <div id="theme-switcher" role="button" tabindex="0" aria-label="Toggle light/dark theme" title="Click to switch theme" class="icon-button theme-switcher-btn">🌓</div>
+                </div>
+            </header>
+
+            <main class="app-content">
+            <section id="view-compare" class="app-view is-active">
+            <div class="stats-row" id="stats-row">
+                <div class="stat-card">
+                    <span class="stat-icon" aria-hidden="true">⇄</span>
+                    <div class="stat-body"><span class="stat-value" id="stat-total">0</span><span class="stat-label" data-i18n="statTotalRuns">Comparisons run</span></div>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-icon" aria-hidden="true">＋</span>
+                    <div class="stat-body"><span class="stat-value" id="stat-added">0</span><span class="stat-label" data-i18n="statLinesAdded">Lines added</span></div>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-icon" aria-hidden="true">－</span>
+                    <div class="stat-body"><span class="stat-value" id="stat-removed">0</span><span class="stat-label" data-i18n="statLinesRemoved">Lines removed</span></div>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-icon" aria-hidden="true">◔</span>
+                    <div class="stat-body"><span class="stat-value" id="stat-language">–</span><span class="stat-label" data-i18n="statTopLanguage">Most used language</span></div>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-icon" aria-hidden="true">≈</span>
+                    <div class="stat-body"><span class="stat-value" id="stat-similarity">–</span><span class="stat-label" data-i18n="statAvgSimilarity">Average similarity</span></div>
+                </div>
+            </div>
+            <div class="container">
         <div class="controls-panel">
             <div class="control-section">
                 <span class="control-label" data-i18n="languageLabel">Language:</span>
@@ -39,6 +103,7 @@
                     <input type="text" id="language-search" placeholder="Search language..." data-i18n-placeholder="languageSearchPlaceholder" autocomplete="off" aria-label="Search programming language for diff highlighting" role="combobox" aria-expanded="false" aria-controls="language-options">
                     <div class="searchable-options" id="language-options"></div>
                 </div>
+                <button type="button" id="detect-language-btn" class="icon-button" data-i18n="detectLanguage" title="Guess the language from the code you pasted">Auto-detect</button>
             </div>
 
             <details class="control-section advanced-settings">
@@ -59,7 +124,10 @@
                         <span class="control-label" data-i18n="processingLabel">Processing:</span>
                         <div class="control-group">
                             <label class="switch-toggle"><input type="checkbox" data-plugin="normalize-whitespace"> <span class="slider"></span><span data-i18n="ignoreWhitespace">Ignore Whitespace</span></label>
+                            <label class="switch-toggle"><input type="checkbox" data-plugin="ignore-blank-lines"> <span class="slider"></span><span data-i18n="ignoreBlankLines">Ignore Blank Lines</span></label>
                             <label class="switch-toggle"><input type="checkbox" data-plugin="ignore-case"> <span class="slider"></span><span data-i18n="ignoreCase">Ignore Case</span></label>
+                            <label class="switch-toggle"><input type="checkbox" id="detect-moved-toggle"> <span class="slider"></span><span data-i18n="detectMoved">Highlight Moved Code</span></label>
+                            <label class="switch-toggle"><input type="checkbox" id="live-diff-toggle"> <span class="slider"></span><span data-i18n="liveDiff">Live Diff (auto-compare while typing)</span></label>
                         </div>
                     </div>
                     <div class="control-section ignore-rules-section">
@@ -70,6 +138,11 @@
                                 <option value="removeLines" data-i18n="ignoreRemoveLines">Remove matching lines</option>
                                 <option value="stripMatches" data-i18n="ignoreStripMatches">Strip matches within lines</option>
                             </select>
+                            <select id="ignore-preset-select" class="control-select">
+                                <option value="" data-i18n="ignorePresetPlaceholder">— Saved presets —</option>
+                            </select>
+                            <button type="button" id="ignore-preset-save-btn" class="icon-button" data-i18n="ignorePresetSave" title="Save the current rules as a preset">Save preset</button>
+                            <button type="button" id="ignore-preset-delete-btn" class="icon-button" data-i18n="ignorePresetDelete" title="Delete the selected preset">Delete preset</button>
                         </div>
                         <div id="ignore-rules-status" class="ignore-rules-status" role="status" aria-live="polite"></div>
                     </div>
@@ -104,7 +177,9 @@
             </div>
             <div class="action-footer">
                 <button id="compare-btn" class="compare-button" title="Shortcut: Ctrl+Enter" data-i18n="compareButton">Compare</button>
+                <button id="swap-btn" type="button" class="compare-button secondary-button" title="Swap the original and modified content"><span aria-hidden="true">⇅</span> <span data-i18n="swapButton">Swap</span></button>
                 <button id="format-json-btn" type="button" class="compare-button secondary-button" data-i18n="formatJson" title="Pretty-print any valid JSON on either side">Format JSON</button>
+                <button id="shortcuts-help-btn" type="button" class="icon-button" title="Keyboard shortcuts"><span aria-hidden="true">⌘</span> <span data-i18n="shortcutsHelp">Shortcuts</span></button>
                 <div class="shortcut-hint" data-i18n="shortcutHint">Tip: press Ctrl+Enter (⌘+Enter on Mac) to compare</div>
                 <div id="format-json-status" class="format-json-status" role="status" aria-live="polite"></div>
             </div>
@@ -114,6 +189,12 @@
             <div class="action-footer diff-toolbar">
                 <button id="new-comparison-btn" class="compare-button secondary-button"><span aria-hidden="true">&larr;</span> <span data-i18n="newComparison">New Comparison</span></button>
                 <div id="diff-stats" class="diff-stats" aria-hidden="true"></div>
+                <div class="diff-search">
+                    <input type="text" id="diff-search-input" data-i18n-placeholder="searchInDiff" placeholder="Search in diff...">
+                    <span id="diff-search-count" class="diff-search-count"></span>
+                    <button type="button" id="diff-search-prev-btn" class="icon-button" aria-label="Previous match">↑</button>
+                    <button type="button" id="diff-search-next-btn" class="icon-button" aria-label="Next match">↓</button>
+                </div>
                 <div class="diff-actions">
                     <div class="view-toggle" role="group" aria-label="Diff view mode">
                         <button type="button" id="view-unified-btn" class="view-toggle-btn active" aria-pressed="true" data-i18n="unifiedView">Unified</button>
@@ -123,6 +204,8 @@
                     <label class="switch-toggle collapse-toggle"><input type="checkbox" id="wrap-lines-toggle"> <span class="slider"></span><span data-i18n="wrapLines">Wrap long lines</span></label>
                     <button id="copy-diff-btn" type="button" class="compare-button secondary-button" data-i18n="copyDiff">Copy Diff</button>
                     <button id="download-diff-btn" type="button" class="compare-button secondary-button" data-i18n="downloadDiff">Download .diff</button>
+                    <button id="export-html-btn" type="button" class="compare-button secondary-button" data-i18n="exportHtmlReport" title="Save this comparison as a standalone HTML report">Export HTML Report</button>
+                    <button id="print-pdf-btn" type="button" class="compare-button secondary-button" data-i18n="printPdf" title="Print this comparison or save it as a PDF">Print / Save as PDF</button>
                     <button id="share-link-btn" type="button" class="compare-button secondary-button" data-i18n="shareLink">Share Link</button>
                 </div>
             </div>
@@ -144,22 +227,122 @@
                 </div>
             </div>
         </div>
+            </div>
+            </section>
+
+            <section id="view-history" class="app-view">
+                <div class="view-panel">
+                    <div class="view-panel-header">
+                        <h3 data-i18n="historyTitle">Comparison History</h3>
+                        <div class="view-panel-actions">
+                            <button type="button" id="export-history-btn" class="compare-button secondary-button" data-i18n="exportHistory">Export</button>
+                            <button type="button" id="import-history-btn" class="compare-button secondary-button" data-i18n="importHistory">Import</button>
+                            <input type="file" id="import-history-input" accept="application/json" hidden>
+                            <button type="button" id="clear-history-btn" class="compare-button secondary-button" data-i18n="clearHistory">Clear History</button>
+                        </div>
+                    </div>
+                    <div id="history-list" class="history-list"></div>
+                    <p id="history-empty" class="history-empty" data-i18n="historyEmpty">No comparisons yet. Run one from the Compare tab.</p>
+                </div>
+            </section>
+
+            <section id="view-batch" class="app-view">
+                <div class="view-panel">
+                    <div class="view-panel-header">
+                        <h3 data-i18n="batchTitle">Batch Compare Files</h3>
+                    </div>
+                    <div class="batch-upload-row">
+                        <div class="batch-upload-box">
+                            <span class="control-label" data-i18n="batchOriginalFiles">Original files</span>
+                            <input type="file" id="batch-original-input" multiple>
+                            <div id="batch-original-list" class="batch-file-list"></div>
+                        </div>
+                        <div class="batch-upload-box">
+                            <span class="control-label" data-i18n="batchModifiedFiles">Modified files</span>
+                            <input type="file" id="batch-modified-input" multiple>
+                            <div id="batch-modified-list" class="batch-file-list"></div>
+                        </div>
+                    </div>
+                    <button type="button" id="batch-run-btn" class="compare-button" data-i18n="batchRun">Run Batch Compare</button>
+                    <p class="batch-hint" data-i18n="batchHint">Files are matched by name. Files present on only one side are listed as fully added or removed.</p>
+                    <div id="batch-results" class="batch-results"></div>
+                </div>
+            </section>
+
+            <section id="view-settings" class="app-view">
+                <div class="view-panel">
+                    <div class="view-panel-header">
+                        <h3 data-i18n="settingsTitle">Settings</h3>
+                    </div>
+                    <div class="settings-block">
+                        <div class="settings-row">
+                            <div>
+                                <strong data-i18n="settingsAppearance">Appearance</strong>
+                                <p data-i18n="settingsAppearanceHint">Toggle theme and interface language from the top bar.</p>
+                            </div>
+                        </div>
+                        <div class="settings-row">
+                            <div>
+                                <strong data-i18n="settingsSyntaxThemeTitle">Code color theme</strong>
+                                <p data-i18n="settingsSyntaxThemeHint">Choose the syntax highlighting theme used for code.</p>
+                            </div>
+                            <select id="syntax-theme-select" class="control-select">
+                                <option value="auto" data-i18n="themeAuto">Auto (match app theme)</option>
+                                <option value="okaidia">Okaidia</option>
+                                <option value="dark">Dark</option>
+                                <option value="tomorrow">Tomorrow Night</option>
+                                <option value="twilight">Twilight</option>
+                                <option value="solarizedlight">Solarized Light</option>
+                                <option value="coy">Coy</option>
+                                <option value="funky">Funky</option>
+                                <option value="prism">Prism Default</option>
+                            </select>
+                        </div>
+                        <div class="settings-row">
+                            <div>
+                                <strong data-i18n="settingsResetTitle">Reset local data</strong>
+                                <p data-i18n="settingsResetHint">Clears saved preferences and comparison history stored in this browser.</p>
+                            </div>
+                            <button type="button" id="reset-data-btn" class="compare-button secondary-button" data-i18n="settingsResetButton">Reset Data</button>
+                        </div>
+                        <div class="settings-row">
+                            <div>
+                                <strong data-i18n="settingsAboutTitle">About</strong>
+                                <p><span data-i18n="settingsAboutHint">CodeCompare is an open-source, client-side diff tool.</span> <a href="https://github.com/GeekNeuron/CodeCompare" target="_blank" data-i18n="viewOnGithub">View on GitHub</a></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            </main>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="shortcuts-modal" hidden>
+        <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="shortcuts-modal-title">
+            <div class="modal-header">
+                <h3 id="shortcuts-modal-title" data-i18n="shortcutsHelp">Keyboard shortcuts</h3>
+                <button type="button" class="icon-button" id="shortcuts-modal-close" aria-label="Close">✕</button>
+            </div>
+            <div class="modal-body" id="shortcuts-modal-body"></div>
+        </div>
     </div>
 
     <script src="lib/prism.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="lib/prism/plugins/autoloader/prism-autoloader.min.js" data-autoloader-path="lib/prism/components/"></script>
     <script src="diff-utils.js"></script>
     <script src="share-utils.js"></script>
     <script src="json-utils.js"></script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/plugins/show-invisibles/prism-show-invisibles.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/plugins/autolinker/prism-autolinker.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/plugins/match-braces/prism-match-braces.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/plugins/inline-color/prism-inline-color.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/plugins/previewers/prism-previewers.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/plugins/command-line/prism-command-line.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/plugins/normalize-whitespace/prism-normalize-whitespace.min.js"></script>
+    <script src="lib/prism/plugins/show-invisibles/prism-show-invisibles.min.js"></script>
+    <script src="lib/prism/plugins/autolinker/prism-autolinker.min.js"></script>
+    <script src="lib/prism/plugins/match-braces/prism-match-braces.min.js"></script>
+    <script src="lib/prism/plugins/inline-color/prism-inline-color.min.js"></script>
+    <script src="lib/prism/plugins/previewers/prism-previewers.min.js"></script>
+    <script src="lib/prism/plugins/command-line/prism-command-line.min.js"></script>
+    <script src="lib/prism/plugins/normalize-whitespace/prism-normalize-whitespace.min.js"></script>
 
     <script src="script.js"></script>
+    <script src="dashboard.js"></script>
 </body>
 </html>

@@ -35,11 +35,13 @@ export default [
         navigator: 'readonly',
         console: 'readonly',
         alert: 'readonly',
+        confirm: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
         FileReader: 'readonly',
         Blob: 'readonly',
         URL: 'readonly',
         requestAnimationFrame: 'readonly',
-        // Loaded via <script> tags:
         Prism: 'readonly',
         CodeCompareDiff: 'readonly',
         CodeCompareShare: 'readonly',
@@ -55,6 +57,31 @@ export default [
     }
   },
   {
+    files: ['dashboard.js'],
+    languageOptions: {
+      ecmaVersion: 2021,
+      sourceType: 'script',
+      globals: {
+        window: 'readonly',
+        document: 'readonly',
+        localStorage: 'readonly',
+        location: 'readonly',
+        console: 'readonly',
+        Event: 'readonly',
+        confirm: 'readonly',
+        Blob: 'readonly',
+        URL: 'readonly',
+        FileReader: 'readonly',
+        setTimeout: 'readonly',
+        Promise: 'readonly'
+      }
+    },
+    rules: {
+      'no-unused-vars': 'warn',
+      'no-undef': 'error'
+    }
+  },
+  {
     files: ['service-worker.js'],
     languageOptions: {
       ecmaVersion: 2021,
@@ -62,7 +89,8 @@ export default [
       globals: {
         self: 'readonly',
         caches: 'readonly',
-        fetch: 'readonly'
+        fetch: 'readonly',
+        URL: 'readonly'
       }
     },
     rules: {

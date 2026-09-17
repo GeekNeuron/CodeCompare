@@ -1,37 +1,12 @@
-/**
- * CodeCompareDiff - a small, dependency-free line-based diff utility.
- *
- * Exposed as `window.CodeCompareDiff` in the browser and as a CommonJS module
- * in Node (so the same code can be unit-tested with Jest without needing a DOM
- * or any external diff library).
- */
 (function (root) {
-    // Guard against pathological O(n*m) time/memory on very large inputs.
-    // Above this many line1*line2 cells we fall back to a coarse "everything
-    // changed" diff instead of freezing the tab.
     const MAX_CELLS = 4_000_000;
 
-    /**
-     * Split text into lines the way a human comparing files would expect:
-     * a single trailing newline does not create a phantom empty last line,
-     * but intentional blank lines elsewhere in the text are preserved.
-     */
     function toLines(text) {
         if (text === '') return [];
         const normalized = text.endsWith('\n') ? text.slice(0, -1) : text;
         return normalized.split('\n');
     }
 
-    /**
-     * Generic LCS (longest common subsequence) diff over two arrays of
-     * {key, value} items, comparing by `key` but returning the original
-     * `value`. This lets callers diff by a normalized key (e.g. lowercased,
-     * for case-insensitive comparison) while still displaying the original
-     * text. This is the core algorithm shared by the line-level and
-     * word-level diffs.
-     *
-     * @returns {Array<{type: 'added'|'removed'|'unchanged', value: *}>}
-     */
     function diffArrays(a, b, maxCells) {
         const n = a.length;
         const m = b.length;
@@ -43,7 +18,6 @@
             ];
         }
 
-        // dp[i][j] = length of the LCS of a[i..] and b[j..]
         const dp = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
         for (let i = n - 1; i >= 0; i--) {
             for (let j = m - 1; j >= 0; j--) {
@@ -58,9 +32,6 @@
         let j = 0;
         while (i < n && j < m) {
             if (a[i].key === b[j].key) {
-                // Keep side A's original value on a "match" so the diff mirrors
-                // what the user typed on the original side when only the
-                // comparison key (e.g. case) differs.
                 result.push({ type: 'unchanged', value: a[i].value });
                 i++; j++;
             } else if (dp[i + 1][j] >= dp[i][j + 1]) {
@@ -81,15 +52,6 @@
         return items.map(value => ({ key: keyFn ? keyFn(value) : value, value }));
     }
 
-    /**
-     * Computes a line-by-line diff between two strings using an LCS
-     * (longest common subsequence) dynamic-programming table.
-     *
-     * @param {string} text1
-     * @param {string} text2
-     * @param {{ignoreCase?: boolean}} [options]
-     * @returns {Array<{type: 'added'|'removed'|'unchanged', line: string}>}
-     */
     function computeLineDiff(text1, text2, options) {
         const ignoreCase = !!(options && options.ignoreCase);
         const keyFn = ignoreCase ? line => line.toLowerCase() : null;
@@ -103,35 +65,18 @@
         return diffArrays(linesA, linesB, MAX_CELLS).map(({ type, value }) => ({ type, line: value }));
     }
 
-    // Word-level diffs operate on much shorter arrays (tokens within a single
-    // line), so a far smaller cell budget is already generous; this just
-    // guards against pathological single lines (e.g. a multi-megabyte minified
-    // line) blowing up the DP table.
     const MAX_WORD_CELLS = 200_000;
 
-    /**
-     * Splits a line into word-diff tokens: runs of word characters, runs of
-     * whitespace, and individual punctuation/symbol characters. Concatenating
-     * the tokens reproduces the original line exactly.
-     */
     function tokenizeLine(line) {
-        return line.match(/\w+|\s+|[^\s\w]/g) || [];
+        return line.match(/[\p{L}\p{N}_]+|\s+|[^\s\p{L}\p{N}_]/gu) || [];
     }
 
-    /**
-     * Computes a word-level diff between two (usually short, single-line)
-     * strings, for highlighting exactly what changed within a modified line
-     * rather than marking the whole line as changed.
-     *
-     * @returns {Array<{type: 'added'|'removed'|'unchanged', value: string}>}
-     */
     function computeWordDiff(lineA, lineB) {
         const tokensA = toKeyValue(tokenizeLine(lineA));
         const tokensB = toKeyValue(tokenizeLine(lineB));
         return diffArrays(tokensA, tokensB, MAX_WORD_CELLS);
     }
 
-    /** Renders diff entries as `+`/`-`/` ` prefixed lines (simple diff format). */
     function formatDiffText(diffEntries) {
         return diffEntries.map(({ type, line }) => {
             const prefix = type === 'added' ? '+' : type === 'removed' ? '-' : ' ';
@@ -139,25 +84,69 @@
         }).join('\n');
     }
 
-    /** Counts added/removed lines from diff entries. */
     function computeStats(diffEntries) {
         let added = 0;
         let removed = 0;
+        let unchanged = 0;
         diffEntries.forEach(({ type }) => {
             if (type === 'added') added++;
-            if (type === 'removed') removed++;
+            else if (type === 'removed') removed++;
+            else unchanged++;
         });
-        return { added, removed };
+        const total = added + removed + unchanged;
+        const similarity = total === 0 ? 100 : Math.round((unchanged / total) * 100);
+        return { added, removed, unchanged, total, similarity };
     }
 
-    /**
-     * Groups diff entries into aligned left/right rows for a side-by-side view.
-     * Consecutive removed/added lines between two unchanged lines are paired up
-     * index-by-index (like GitHub's split diff), padding the shorter side with
-     * an 'empty' placeholder so both columns stay the same length and in sync.
-     *
-     * @returns {Array<{left: {type, line}, right: {type, line}}>}
-     */
+    function applyIgnoreBlankLines(diffEntries) {
+        return diffEntries.map(entry => {
+            if ((entry.type === 'added' || entry.type === 'removed') && entry.line.trim() === '') {
+                return { type: 'unchanged', line: entry.line };
+            }
+            return entry;
+        });
+    }
+
+    function detectMovedBlocks(diffEntries, minSingleLineLength) {
+        const threshold = typeof minSingleLineLength === 'number' ? minSingleLineLength : 20;
+        const blocks = [];
+        let i = 0;
+        while (i < diffEntries.length) {
+            const type = diffEntries[i].type;
+            if (type === 'added' || type === 'removed') {
+                let j = i;
+                while (j < diffEntries.length && diffEntries[j].type === type) j++;
+                blocks.push({ type, start: i, end: j, lines: diffEntries.slice(i, j).map(e => e.line) });
+                i = j;
+            } else {
+                i++;
+            }
+        }
+
+        const signature = lines => lines.map(l => l.trim()).join('\n');
+        const addedBySig = new Map();
+        blocks.filter(b => b.type === 'added').forEach(b => {
+            const sig = signature(b.lines);
+            if (!addedBySig.has(sig)) addedBySig.set(sig, []);
+            addedBySig.get(sig).push(b);
+        });
+
+        const result = diffEntries.map(e => ({ ...e }));
+        blocks.filter(b => b.type === 'removed').forEach(rb => {
+            const sig = signature(rb.lines);
+            if (sig.trim() === '') return;
+            const eligible = rb.lines.length >= 2 || sig.length >= threshold;
+            if (!eligible) return;
+            const matches = addedBySig.get(sig);
+            if (matches && matches.length > 0) {
+                const ab = matches.shift();
+                for (let k = rb.start; k < rb.end; k++) result[k].moved = true;
+                for (let k = ab.start; k < ab.end; k++) result[k].moved = true;
+            }
+        });
+        return result;
+    }
+
     function buildSideBySideRows(diffEntries) {
         const rows = [];
         let removedBuffer = [];
@@ -167,8 +156,8 @@
             const max = Math.max(removedBuffer.length, addedBuffer.length);
             for (let k = 0; k < max; k++) {
                 rows.push({
-                    left: k < removedBuffer.length ? { type: 'removed', line: removedBuffer[k] } : { type: 'empty', line: '' },
-                    right: k < addedBuffer.length ? { type: 'added', line: addedBuffer[k] } : { type: 'empty', line: '' }
+                    left: k < removedBuffer.length ? { type: 'removed', line: removedBuffer[k].line, moved: removedBuffer[k].moved } : { type: 'empty', line: '' },
+                    right: k < addedBuffer.length ? { type: 'added', line: addedBuffer[k].line, moved: addedBuffer[k].moved } : { type: 'empty', line: '' }
                 });
             }
             removedBuffer = [];
@@ -177,9 +166,9 @@
 
         diffEntries.forEach(entry => {
             if (entry.type === 'removed') {
-                removedBuffer.push(entry.line);
+                removedBuffer.push(entry);
             } else if (entry.type === 'added') {
-                addedBuffer.push(entry.line);
+                addedBuffer.push(entry);
             } else {
                 flushBuffer();
                 rows.push({
@@ -193,18 +182,6 @@
         return rows;
     }
 
-    /**
-     * Collapses long runs of "unchanged" items into a single placeholder,
-     * keeping a few lines of context visible on each side - the same idea
-     * as GitHub folding unchanged hunks in a diff. Works on any list (flat
-     * line-diff entries, or side-by-side rows) via an injected predicate, so
-     * both the Unified and Split renderers can reuse it.
-     *
-     * @param {Array} items
-     * @param {(item: *) => boolean} isCollapsible
-     * @param {{context?: number, minRun?: number}} [options]
-     * @returns {Array<{kind: 'item', item: *} | {kind: 'collapsed', items: Array}>}
-     */
     function foldRuns(items, isCollapsible, options) {
         const context = (options && options.context) || 3;
         const minRun = (options && options.minRun) || 8;
@@ -236,17 +213,6 @@
         return result;
     }
 
-    /**
-     * Applies user-supplied regex ignore rules to a text before diffing, so
-     * things like timestamps, TODO comments, or log-level prefixes don't
-     * show up as noise in the diff. Invalid patterns are reported rather
-     * than thrown, so one bad regex doesn't block the valid ones.
-     *
-     * @param {string} text
-     * @param {string[]} patterns - regex source strings (no slashes/flags)
-     * @param {'removeLines'|'stripMatches'} mode
-     * @returns {{text: string, errors: Array<{pattern: string, error: string}>}}
-     */
     function applyIgnoreRules(text, patterns, mode) {
         const regexes = [];
         const errors = [];
@@ -282,7 +248,7 @@
 
     const api = {
         computeLineDiff, formatDiffText, computeStats, buildSideBySideRows,
-        computeWordDiff, foldRuns, applyIgnoreRules
+        computeWordDiff, foldRuns, applyIgnoreRules, applyIgnoreBlankLines, detectMovedBlocks
     };
 
     if (typeof module !== 'undefined' && module.exports) {

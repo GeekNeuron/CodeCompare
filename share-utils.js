@@ -1,19 +1,6 @@
-/**
- * CodeCompareShare - encodes/decodes a comparison (original text, modified
- * text, language, view) into a URL-safe string so it can be shared as a link
- * with no server involved: the data lives entirely in the URL fragment.
- *
- * Uses the browser's native Compression Streams API (gzip) when available to
- * keep links reasonably short, with a graceful fallback to uncompressed
- * base64 on browsers that don't support it.
- *
- * Exposed as `window.CodeCompareShare` in the browser and as a CommonJS
- * module in Node (so it can be unit-tested with Jest).
- */
 (function (root) {
     const B64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
 
-    /** Encodes a byte array as URL-safe base64 (RFC 4648 §5), no padding. */
     function bytesToBase64Url(bytes) {
         let result = '';
         for (let i = 0; i < bytes.length; i += 3) {
@@ -31,7 +18,6 @@
         return result;
     }
 
-    /** Decodes a URL-safe base64 string (produced by bytesToBase64Url) back to bytes. */
     function base64UrlToBytes(str) {
         const lookup = {};
         for (let i = 0; i < B64_CHARS.length; i++) lookup[B64_CHARS[i]] = i;
@@ -71,12 +57,6 @@
         return new Uint8Array(await new Response(stream).arrayBuffer());
     }
 
-    /**
-     * Encodes a JSON-serializable payload into a URL-safe string. Gzips first
-     * when supported (most current browsers) to keep the resulting link short;
-     * a leading '1'/'0' flag records whether compression was used, so a link
-     * generated on one browser can still be decoded on another.
-     */
     async function encodeSharePayload(payload) {
         const json = JSON.stringify(payload);
         const bytes = new TextEncoder().encode(json);
@@ -87,10 +67,6 @@
         return '0' + bytesToBase64Url(bytes);
     }
 
-    /**
-     * Reverses encodeSharePayload. Throws on malformed/corrupted input, or if
-     * the link was compressed but this browser lacks decompression support.
-     */
     async function decodeSharePayload(encoded) {
         if (typeof encoded !== 'string' || encoded.length < 2) {
             throw new Error('Empty or invalid share payload');
