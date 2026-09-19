@@ -84,6 +84,78 @@
         }).join('\n');
     }
 
+    function formatHunkSide(start, count) {
+        return count === 1 ? `${start}` : `${start},${count}`;
+    }
+
+    function buildUnifiedPatch(diffEntries, options) {
+        const context = (options && typeof options.context === 'number') ? options.context : 3;
+        const originalLabel = (options && options.originalLabel) || 'a/original';
+        const modifiedLabel = (options && options.modifiedLabel) || 'b/modified';
+
+        const n = diffEntries.length;
+        if (n === 0 || diffEntries.every(e => e.type === 'unchanged')) return '';
+
+        const include = new Array(n).fill(false);
+        diffEntries.forEach((e, i) => {
+            if (e.type !== 'unchanged') {
+                for (let k = Math.max(0, i - context); k <= Math.min(n - 1, i + context); k++) {
+                    include[k] = true;
+                }
+            }
+        });
+
+        const oldLineAt = new Array(n + 1);
+        const newLineAt = new Array(n + 1);
+        oldLineAt[0] = 1;
+        newLineAt[0] = 1;
+        for (let i = 0; i < n; i++) {
+            oldLineAt[i + 1] = oldLineAt[i] + (diffEntries[i].type !== 'added' ? 1 : 0);
+            newLineAt[i + 1] = newLineAt[i] + (diffEntries[i].type !== 'removed' ? 1 : 0);
+        }
+
+        const hunkRanges = [];
+        let i = 0;
+        while (i < n) {
+            if (!include[i]) {
+                i++;
+                continue;
+            }
+            let j = i;
+            while (j < n && include[j]) j++;
+            hunkRanges.push([i, j]);
+            i = j;
+        }
+
+        const output = [`--- ${originalLabel}`, `+++ ${modifiedLabel}`];
+
+        hunkRanges.forEach(([start, end]) => {
+            let oldCount = 0;
+            let newCount = 0;
+            const body = [];
+            for (let k = start; k < end; k++) {
+                const e = diffEntries[k];
+                if (e.type === 'added') {
+                    newCount++;
+                    body.push(`+${e.line}`);
+                } else if (e.type === 'removed') {
+                    oldCount++;
+                    body.push(`-${e.line}`);
+                } else {
+                    oldCount++;
+                    newCount++;
+                    body.push(` ${e.line}`);
+                }
+            }
+            const oldStart = oldCount === 0 ? oldLineAt[start] - 1 : oldLineAt[start];
+            const newStart = newCount === 0 ? newLineAt[start] - 1 : newLineAt[start];
+            output.push(`@@ -${formatHunkSide(oldStart, oldCount)} +${formatHunkSide(newStart, newCount)} @@`);
+            output.push(...body);
+        });
+
+        return output.join('\n') + '\n';
+    }
+
     function computeStats(diffEntries) {
         let added = 0;
         let removed = 0;
@@ -96,6 +168,46 @@
         const total = added + removed + unchanged;
         const similarity = total === 0 ? 100 : Math.round((unchanged / total) * 100);
         return { added, removed, unchanged, total, similarity };
+    }
+
+    function detectLineEndingStyle(text) {
+        const hasCRLF = /\r\n/.test(text);
+        const hasLoneLF = /(^|[^\r])\n/.test(text);
+        if (hasCRLF && hasLoneLF) return 'mixed';
+        if (hasCRLF) return 'crlf';
+        if (hasLoneLF) return 'lf';
+        return 'none';
+    }
+
+    function hasBom(text) {
+        return text.charCodeAt(0) === 0xFEFF;
+    }
+
+    function detectEncodingIssues(originalText, modifiedText) {
+        const originalStyle = detectLineEndingStyle(originalText);
+        const modifiedStyle = detectLineEndingStyle(modifiedText);
+        const originalBom = hasBom(originalText);
+        const modifiedBom = hasBom(modifiedText);
+
+        const lineEndingMismatch = originalStyle !== 'none' && modifiedStyle !== 'none' &&
+            originalStyle !== modifiedStyle;
+        const bomMismatch = originalBom !== modifiedBom;
+
+        return {
+            lineEndingMismatch,
+            bomMismatch,
+            originalStyle,
+            modifiedStyle,
+            originalBom,
+            modifiedBom,
+            hasIssue: lineEndingMismatch || bomMismatch
+        };
+    }
+
+    function normalizeLineEndingsAndBom(text) {
+        let result = text.charCodeAt(0) === 0xFEFF ? text.slice(1) : text;
+        result = result.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+        return result;
     }
 
     function applyIgnoreBlankLines(diffEntries) {
@@ -248,7 +360,8 @@
 
     const api = {
         computeLineDiff, formatDiffText, computeStats, buildSideBySideRows,
-        computeWordDiff, foldRuns, applyIgnoreRules, applyIgnoreBlankLines, detectMovedBlocks
+        computeWordDiff, foldRuns, applyIgnoreRules, applyIgnoreBlankLines, detectMovedBlocks, buildUnifiedPatch,
+        detectEncodingIssues, normalizeLineEndingsAndBom, detectLineEndingStyle
     };
 
     if (typeof module !== 'undefined' && module.exports) {

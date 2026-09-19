@@ -1,4 +1,4 @@
-const { computeLineDiff, formatDiffText, computeStats, buildSideBySideRows, computeWordDiff, foldRuns, applyIgnoreRules, applyIgnoreBlankLines, detectMovedBlocks } = require('../diff-utils.js');
+const { computeLineDiff, formatDiffText, computeStats, buildSideBySideRows, computeWordDiff, foldRuns, applyIgnoreRules, applyIgnoreBlankLines, detectMovedBlocks, buildUnifiedPatch, detectEncodingIssues, normalizeLineEndingsAndBom } = require('../diff-utils.js');
 
 describe('computeLineDiff', () => {
     test('identical texts produce only unchanged lines', () => {
@@ -506,5 +506,104 @@ describe('detectMovedBlocks', () => {
         const result = detectMovedBlocks(diff);
         expect(result).not.toBe(diff);
         expect(diff[0].moved).toBeUndefined();
+    });
+});
+
+describe('buildUnifiedPatch', () => {
+    test('produces a standard @@ hunk header for a single change with context', () => {
+        const entries = computeLineDiff('a\nb\nc\nd\ne\n', 'a\nb\nX\nd\ne\n', {});
+        const patch = buildUnifiedPatch(entries, { originalLabel: 'a/f', modifiedLabel: 'b/f' });
+        expect(patch).toBe('--- a/f\n+++ b/f\n@@ -1,5 +1,5 @@\n a\n b\n-c\n+X\n d\n e\n');
+    });
+
+    test('an identical pair produces an empty patch', () => {
+        const entries = computeLineDiff('same\ntext\n', 'same\ntext\n', {});
+        expect(buildUnifiedPatch(entries)).toBe('');
+    });
+
+    test('an empty diff (no entries) produces an empty patch', () => {
+        expect(buildUnifiedPatch([])).toBe('');
+    });
+
+    test('pure insertion at the start uses a 0-count old side (no context)', () => {
+        const entries = computeLineDiff('b\nc\n', 'a\nb\nc\n', {});
+        const patch = buildUnifiedPatch(entries, { context: 0 });
+        expect(patch).toContain('@@ -0,0 +1 @@');
+        expect(patch).toContain('+a');
+    });
+
+    test('pure deletion at the end uses a 0-count new side (no context)', () => {
+        const entries = computeLineDiff('a\nb\nc\n', 'a\nb\n', {});
+        const patch = buildUnifiedPatch(entries, { context: 0 });
+        expect(patch).toContain('@@ -3 +2,0 @@');
+        expect(patch).toContain('-c');
+    });
+
+    test('two far-apart changes produce two separate hunks', () => {
+        const before = Array.from({ length: 20 }, (_, i) => 'line' + i).join('\n') + '\n';
+        const after = before.replace('line1\n', 'CHANGED\n').replace('line17\n', 'CHANGED17\n');
+        const entries = computeLineDiff(before, after, {});
+        const patch = buildUnifiedPatch(entries);
+        expect(patch.match(/^@@/gm)).toHaveLength(2);
+    });
+
+    test('defaults to a/original and b/modified labels when none are given', () => {
+        const entries = computeLineDiff('a\n', 'b\n', {});
+        const patch = buildUnifiedPatch(entries);
+        expect(patch.startsWith('--- a/original\n+++ b/modified\n')).toBe(true);
+    });
+});
+
+describe('detectEncodingIssues', () => {
+    test('no issue when both sides use LF', () => {
+        const result = detectEncodingIssues('a\nb\n', 'a\nc\n');
+        expect(result.hasIssue).toBe(false);
+    });
+
+    test('flags a line-ending mismatch (CRLF vs LF)', () => {
+        const result = detectEncodingIssues('a\r\nb\r\n', 'a\nb\n');
+        expect(result.lineEndingMismatch).toBe(true);
+        expect(result.hasIssue).toBe(true);
+        expect(result.originalStyle).toBe('crlf');
+        expect(result.modifiedStyle).toBe('lf');
+    });
+
+    test('flags a BOM mismatch even when line endings match', () => {
+        const result = detectEncodingIssues('\uFEFFa\nb\n', 'a\nb\n');
+        expect(result.bomMismatch).toBe(true);
+        expect(result.hasIssue).toBe(true);
+    });
+
+    test('a single-line file (no line endings at all) does not trigger a false line-ending mismatch', () => {
+        const result = detectEncodingIssues('onlyline', 'onlyline');
+        expect(result.lineEndingMismatch).toBe(false);
+    });
+
+    test('mixed line endings are detected as their own style', () => {
+        expect(detectEncodingIssues('a\r\nb\nc\r\n', 'a\r\nb\r\n').originalStyle).toBe('mixed');
+    });
+});
+
+describe('normalizeLineEndingsAndBom', () => {
+    test('converts CRLF to LF', () => {
+        expect(normalizeLineEndingsAndBom('a\r\nb\r\n')).toBe('a\nb\n');
+    });
+
+    test('strips a leading BOM', () => {
+        expect(normalizeLineEndingsAndBom('\uFEFFhello')).toBe('hello');
+    });
+
+    test('handles bare CR as a line ending too', () => {
+        expect(normalizeLineEndingsAndBom('a\rb\r')).toBe('a\nb\n');
+    });
+
+    test('leaves already-normalized text unchanged', () => {
+        expect(normalizeLineEndingsAndBom('a\nb\n')).toBe('a\nb\n');
+    });
+
+    test('after normalizing, a previously-flagged pair no longer has an issue', () => {
+        const original = normalizeLineEndingsAndBom('\uFEFFa\r\nb\r\n');
+        const modified = normalizeLineEndingsAndBom('a\nb\n');
+        expect(detectEncodingIssues(original, modified).hasIssue).toBe(false);
     });
 });

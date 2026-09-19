@@ -186,6 +186,11 @@
         </main>
 
         <div id="diff-output-container" style="display: none;" role="region" aria-live="polite" aria-label="Comparison result">
+            <div id="encoding-warning" class="encoding-warning" hidden>
+                <span id="encoding-warning-text"></span>
+                <button type="button" id="encoding-normalize-btn" class="compare-button secondary-button" data-i18n="normalizeAndRecompare">Normalize and re-compare</button>
+                <button type="button" id="encoding-warning-dismiss" class="icon-button" aria-label="Dismiss">✕</button>
+            </div>
             <div class="action-footer diff-toolbar">
                 <button id="new-comparison-btn" class="compare-button secondary-button"><span aria-hidden="true">&larr;</span> <span data-i18n="newComparison">New Comparison</span></button>
                 <div id="diff-stats" class="diff-stats" aria-hidden="true"></div>
@@ -204,6 +209,7 @@
                     <label class="switch-toggle collapse-toggle"><input type="checkbox" id="wrap-lines-toggle"> <span class="slider"></span><span data-i18n="wrapLines">Wrap long lines</span></label>
                     <button id="copy-diff-btn" type="button" class="compare-button secondary-button" data-i18n="copyDiff">Copy Diff</button>
                     <button id="download-diff-btn" type="button" class="compare-button secondary-button" data-i18n="downloadDiff">Download .diff</button>
+                    <button id="download-patch-btn" type="button" class="compare-button secondary-button" data-i18n="downloadPatch" title="Download as a standard unified-diff patch (git apply / patch compatible)">Download .patch</button>
                     <button id="export-html-btn" type="button" class="compare-button secondary-button" data-i18n="exportHtmlReport" title="Save this comparison as a standalone HTML report">Export HTML Report</button>
                     <button id="print-pdf-btn" type="button" class="compare-button secondary-button" data-i18n="printPdf" title="Print this comparison or save it as a PDF">Print / Save as PDF</button>
                     <button id="share-link-btn" type="button" class="compare-button secondary-button" data-i18n="shareLink">Share Link</button>

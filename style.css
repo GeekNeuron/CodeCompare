@@ -477,3 +477,9 @@ kbd {
 
 .search-match { outline: 1px solid #e5c07b; outline-offset: -1px; }
 .search-match-current { background-color: rgba(229,192,123,0.25) !important; }
+
+.encoding-warning {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 16px;
+    background-color: rgba(229,192,123,0.14); border-bottom: 1px solid #e5c07b; font-size: 13px;
+}
+.encoding-warning span:first-child { flex: 1; min-width: 200px; color: var(--text-primary); }

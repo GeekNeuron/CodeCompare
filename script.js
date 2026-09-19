@@ -7,6 +7,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const shortcutsModal = document.getElementById('shortcuts-modal');
     const shortcutsModalBody = document.getElementById('shortcuts-modal-body');
     const shortcutsModalClose = document.getElementById('shortcuts-modal-close');
+    const encodingWarningEl = document.getElementById('encoding-warning');
+    const encodingWarningTextEl = document.getElementById('encoding-warning-text');
+    const encodingNormalizeBtn = document.getElementById('encoding-normalize-btn');
+    const encodingWarningDismissBtn = document.getElementById('encoding-warning-dismiss');
     const diffSearchInput = document.getElementById('diff-search-input');
     const diffSearchCountEl = document.getElementById('diff-search-count');
     const diffSearchPrevBtn = document.getElementById('diff-search-prev-btn');
@@ -33,6 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const diffStatsEl = document.getElementById('diff-stats');
     const copyDiffBtn = document.getElementById('copy-diff-btn');
     const downloadDiffBtn = document.getElementById('download-diff-btn');
+    const downloadPatchBtn = document.getElementById('download-patch-btn');
     const exportHtmlBtn = document.getElementById('export-html-btn');
     const printPdfBtn = document.getElementById('print-pdf-btn');
     const shareLinkBtn = document.getElementById('share-link-btn');
@@ -114,6 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
             copyDiff: 'Copy Diff',
             copyDiffDone: 'Copied!',
             downloadDiff: 'Download .diff',
+            downloadPatch: 'Download .patch',
             exportHtmlReport: 'Export HTML Report',
             printPdf: 'Print / Save as PDF',
             shareLink: 'Share Link',
@@ -125,6 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
             searchMatchCount: '{current}/{total}',
             copyDiffManualCopy: 'Copy this diff:',
             shareLinkTooLong: 'Note: this link is quite long and may not work everywhere (e.g. some chat apps truncate long links).',
+            normalizeAndRecompare: 'Normalize and re-compare',
             shareLoadFailed: 'Could not load the shared comparison from this link (it may be corrupted or use an unsupported format).',
             legendAdded: '+ added',
             legendRemoved: '\u2212 removed',
@@ -217,6 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
             copyDiff: 'کپی تفاوت‌ها',
             copyDiffDone: '!کپی شد',
             downloadDiff: 'دانلود .diff',
+            downloadPatch: 'دانلود .patch',
             exportHtmlReport: 'خروجی گزارش HTML',
             printPdf: 'چاپ / ذخیره به‌صورت PDF',
             shareLink: 'اشتراک‌گذاری لینک',
@@ -228,6 +236,7 @@ document.addEventListener('DOMContentLoaded', () => {
             searchMatchCount: '{current}/{total}',
             copyDiffManualCopy: ':این تفاوت‌ها را کپی کنید',
             shareLinkTooLong: '.توجه: این لینک نسبتاً طولانی است و ممکن است در همه‌جا کار نکند (مثلاً برخی اپ‌های پیام‌رسان لینک‌های طولانی را کوتاه می‌کنند)',
+            normalizeAndRecompare: 'یکسان‌سازی و مقایسهٔ مجدد',
             shareLoadFailed: '.بارگذاری مقایسه از این لینک ممکن نشد (ممکن است خراب باشد یا فرمت پشتیبانی‌نشده داشته باشد)',
             legendAdded: 'افزوده‌شده +',
             legendRemoved: 'حذف‌شده \u2212',
@@ -423,6 +432,8 @@ document.addEventListener('DOMContentLoaded', () => {
         formatJsonBtn.addEventListener('click', formatBothAsJson);
         originalCodeEl.addEventListener('input', updateLineCounts);
         modifiedCodeEl.addEventListener('input', updateLineCounts);
+        originalCodeEl.addEventListener('input', () => { uploadedLineEndingStyle.original = null; uploadedBom.original = null; });
+        modifiedCodeEl.addEventListener('input', () => { uploadedLineEndingStyle.modified = null; uploadedBom.modified = null; });
 
         let liveDiffTimer = null;
         const scheduleLiveDiff = () => {
@@ -475,6 +486,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         if (shortcutsModalClose) shortcutsModalClose.addEventListener('click', hideShortcutsHelp);
+        if (encodingNormalizeBtn) encodingNormalizeBtn.addEventListener('click', normalizeInputsAndRecompare);
+        if (encodingWarningDismissBtn) {
+            encodingWarningDismissBtn.addEventListener('click', () => {
+                encodingWarningEl.hidden = true;
+            });
+        }
         if (diffSearchInput) {
             diffSearchInput.addEventListener('input', applyDiffSearch);
             diffSearchInput.addEventListener('keydown', e => {
@@ -536,14 +553,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         uploadOriginalBtn.addEventListener('click', () => uploadOriginalInput.click());
         uploadModifiedBtn.addEventListener('click', () => uploadModifiedInput.click());
-        uploadOriginalInput.addEventListener('change', () => handleFileUpload(uploadOriginalInput, originalCodeEl));
-        uploadModifiedInput.addEventListener('change', () => handleFileUpload(uploadModifiedInput, modifiedCodeEl));
+        uploadOriginalInput.addEventListener('change', () => handleFileUpload(uploadOriginalInput, originalCodeEl, 'original'));
+        uploadModifiedInput.addEventListener('change', () => handleFileUpload(uploadModifiedInput, modifiedCodeEl, 'modified'));
 
-        setupDragAndDrop(originalCodeEl);
-        setupDragAndDrop(modifiedCodeEl);
+        setupDragAndDrop(originalCodeEl, 'original');
+        setupDragAndDrop(modifiedCodeEl, 'modified');
 
         copyDiffBtn.addEventListener('click', copyDiffToClipboard);
         downloadDiffBtn.addEventListener('click', downloadDiffFile);
+        if (downloadPatchBtn) downloadPatchBtn.addEventListener('click', downloadPatchFile);
         if (exportHtmlBtn) exportHtmlBtn.addEventListener('click', exportHtmlReport);
         if (printPdfBtn) printPdfBtn.addEventListener('click', () => window.print());
         shareLinkBtn.addEventListener('click', generateAndCopyShareLink);
@@ -651,14 +669,27 @@ document.addEventListener('DOMContentLoaded', () => {
         comparisonContainer.style.display = '';
     }
 
-    function handleFileUpload(inputEl, targetTextarea) {
+    const uploadedLineEndingStyle = { original: null, modified: null };
+    const uploadedBom = { original: null, modified: null };
+
+    function detectBomFromFile(file) {
+        if (!file.slice || typeof file.slice(0, 3).arrayBuffer !== 'function') {
+            return Promise.resolve(false);
+        }
+        return file.slice(0, 3).arrayBuffer().then(buf => {
+            const bytes = new Uint8Array(buf);
+            return bytes.length >= 3 && bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF;
+        }).catch(() => false);
+    }
+
+    function handleFileUpload(inputEl, targetTextarea, side) {
         const file = inputEl.files && inputEl.files[0];
         inputEl.value = '';
         if (!file) return;
-        loadFileIntoTextarea(file, targetTextarea);
+        loadFileIntoTextarea(file, targetTextarea, side);
     }
 
-    function setupDragAndDrop(textarea) {
+    function setupDragAndDrop(textarea, side) {
         textarea.addEventListener('dragover', e => {
             e.preventDefault();
             textarea.classList.add('drag-over');
@@ -668,22 +699,31 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             textarea.classList.remove('drag-over');
             const file = e.dataTransfer.files && e.dataTransfer.files[0];
-            if (file) loadFileIntoTextarea(file, textarea);
+            if (file) loadFileIntoTextarea(file, textarea, side);
         });
     }
 
-    function loadFileIntoTextarea(file, textarea) {
+    function loadFileIntoTextarea(file, textarea, side) {
         if (file.size > MAX_UPLOAD_SIZE) {
             alert(t('uploadTooLarge'));
             return;
         }
-        const reader = new FileReader();
-        reader.onload = () => {
-            textarea.value = reader.result;
-            updateLineCounts();
-        };
-        reader.onerror = () => alert(t('uploadFailed'));
-        reader.readAsText(file);
+        detectBomFromFile(file).then(hasBom => {
+            if (side === 'original' || side === 'modified') {
+                uploadedBom[side] = hasBom;
+            }
+            const reader = new FileReader();
+            reader.onload = () => {
+                const raw = reader.result;
+                if (side === 'original' || side === 'modified') {
+                    uploadedLineEndingStyle[side] = CodeCompareDiff.detectLineEndingStyle(raw);
+                }
+                textarea.value = raw;
+                updateLineCounts();
+            };
+            reader.onerror = () => alert(t('uploadFailed'));
+            reader.readAsText(file);
+        });
     }
 
     function formatBothAsJson() {
@@ -744,6 +784,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const temp = originalCodeEl.value;
         originalCodeEl.value = modifiedCodeEl.value;
         modifiedCodeEl.value = temp;
+        const tempStyle = uploadedLineEndingStyle.original;
+        uploadedLineEndingStyle.original = uploadedLineEndingStyle.modified;
+        uploadedLineEndingStyle.modified = tempStyle;
+        const tempBom = uploadedBom.original;
+        uploadedBom.original = uploadedBom.modified;
+        uploadedBom.modified = tempBom;
         updateLineCounts();
         if (diffOutputContainer.style.display !== 'none') {
             runComparison();
@@ -892,6 +938,46 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function showEncodingWarningIfNeeded() {
+        if (!encodingWarningEl) return;
+        const originalStyle = uploadedLineEndingStyle.original;
+        const modifiedStyle = uploadedLineEndingStyle.modified;
+        const lineEndingMismatch = !!originalStyle && !!modifiedStyle && originalStyle !== modifiedStyle;
+        const bomMismatch = uploadedBom.original !== null && uploadedBom.modified !== null &&
+            uploadedBom.original !== uploadedBom.modified;
+
+        if (!lineEndingMismatch && !bomMismatch) {
+            encodingWarningEl.hidden = true;
+            return;
+        }
+        const isFa = state.uiLang === 'fa';
+        const parts = [];
+        if (lineEndingMismatch) {
+            parts.push(isFa
+                ? `پایان خط متفاوت (${originalStyle.toUpperCase()} در برابر ${modifiedStyle.toUpperCase()})`
+                : `different line endings (${originalStyle.toUpperCase()} vs ${modifiedStyle.toUpperCase()})`);
+        }
+        if (bomMismatch) {
+            parts.push(isFa ? 'یکی از فایل‌ها BOM دارد و دیگری ندارد' : 'one file has a BOM, the other does not');
+        }
+        const message = '\u26a0 ' +
+            (isFa ? 'این می‌تواند باعث نمایش تغییرات نادرست شود: ' : 'This can cause misleading changes: ') +
+            parts.join(isFa ? ' و ' : ' and ');
+        encodingWarningTextEl.textContent = message;
+        encodingWarningEl.hidden = false;
+    }
+
+    function normalizeInputsAndRecompare() {
+        originalCodeEl.value = CodeCompareDiff.normalizeLineEndingsAndBom(originalCodeEl.value);
+        modifiedCodeEl.value = CodeCompareDiff.normalizeLineEndingsAndBom(modifiedCodeEl.value);
+        uploadedLineEndingStyle.original = null;
+        uploadedLineEndingStyle.modified = null;
+        uploadedBom.original = null;
+        uploadedBom.modified = null;
+        updateLineCounts();
+        runComparison();
+    }
+
     function runComparison() {
         if (originalCodeEl.value === '' && modifiedCodeEl.value === '') return;
 
@@ -903,6 +989,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let originalText = originalCodeEl.value;
         let modifiedText = modifiedCodeEl.value;
+
+        showEncodingWarningIfNeeded();
 
         if (state.plugins['normalize-whitespace']) {
             const normalizer = Prism.plugins && Prism.plugins.NormalizeWhitespace;
@@ -1336,6 +1424,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const a = document.createElement('a');
         a.href = url;
         a.download = 'comparison.diff';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function downloadPatchFile() {
+        if (!lastDiffEntries) return;
+        const patch = CodeCompareDiff.buildUnifiedPatch(lastDiffEntries, {
+            originalLabel: 'a/original',
+            modifiedLabel: 'b/modified'
+        });
+        const blob = new Blob([patch], { type: 'text/x-patch' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'comparison.patch';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
