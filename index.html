@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#21252b">
     <meta name="description" content="Compare two snippets of code or text and view a syntax-highlighted, line-by-line diff.">
     <title data-i18n="pageTitle">CodeCompare Pro</title>
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%2321252b'/%3E%3Ctext x='50' y='68' font-size='55' text-anchor='middle' fill='%2361afef' font-family='monospace'%3E%3C/%3E%3C/text%3E%3C/svg%3E">
+    <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
     <link rel="manifest" href="manifest.json">
 
@@ -97,19 +97,20 @@
             </div>
             <div class="container">
         <div class="controls-panel">
-            <div class="control-section">
-                <span class="control-label" data-i18n="languageLabel">Language:</span>
-                <div class="searchable-select-wrapper">
-                    <input type="text" id="language-search" placeholder="Search language..." data-i18n-placeholder="languageSearchPlaceholder" autocomplete="off" aria-label="Search programming language for diff highlighting" role="combobox" aria-expanded="false" aria-controls="language-options">
-                    <div class="searchable-options" id="language-options"></div>
+            <div class="control-row">
+                <div class="control-section language-section">
+                    <span class="control-label" data-i18n="languageLabel">Language:</span>
+                    <div class="searchable-select-wrapper">
+                        <input type="text" id="language-search" placeholder="Search language..." data-i18n-placeholder="languageSearchPlaceholder" autocomplete="off" aria-label="Search programming language for diff highlighting" role="combobox" aria-expanded="false" aria-controls="language-options">
+                        <div class="searchable-options" id="language-options"></div>
+                    </div>
+                    <button type="button" id="detect-language-btn" class="icon-button" data-i18n="detectLanguage" title="Guess the language from the code you pasted">Auto-detect</button>
                 </div>
-                <button type="button" id="detect-language-btn" class="icon-button" data-i18n="detectLanguage" title="Guess the language from the code you pasted">Auto-detect</button>
-            </div>
 
-            <details class="control-section advanced-settings">
-                <summary class="control-label" data-i18n="advancedSettings">Advanced Settings</summary>
-                <div class="advanced-settings-content">
-                    <div class="control-section plugins-section">
+                <details class="control-section advanced-settings">
+                    <summary class="control-label" data-i18n="advancedSettings">Advanced Settings</summary>
+                    <div class="advanced-settings-content">
+                        <div class="control-section plugins-section">
                          <span class="control-label" data-i18n="pluginsLabel">Plugins:</span>
                          <div class="control-group plugins-group">
                             <label class="switch-toggle"><input type="checkbox" data-plugin="show-invisibles"> <span class="slider"></span><span data-i18n="pluginShowInvisibles">Show Invisibles</span></label>
@@ -134,7 +135,7 @@
                         <span class="control-label" data-i18n="customIgnoreRules">Custom Ignore Rules (regex, one per line):</span>
                         <textarea id="ignore-patterns-input" class="ignore-patterns-input" rows="2" data-i18n-placeholder="ignorePatternsPlaceholder" placeholder="e.g. \d{4}-\d{2}-\d{2}"></textarea>
                         <div class="ignore-rules-controls">
-                            <select id="ignore-rules-mode" class="ignore-rules-mode">
+                            <select id="ignore-rules-mode" class="control-select">
                                 <option value="removeLines" data-i18n="ignoreRemoveLines">Remove matching lines</option>
                                 <option value="stripMatches" data-i18n="ignoreStripMatches">Strip matches within lines</option>
                             </select>
@@ -148,6 +149,7 @@
                     </div>
                 </div>
             </details>
+            </div>
         </div>
 
         <main id="comparison-container">
@@ -179,7 +181,7 @@
                 <button id="compare-btn" class="compare-button" title="Shortcut: Ctrl+Enter" data-i18n="compareButton">Compare</button>
                 <button id="swap-btn" type="button" class="compare-button secondary-button" title="Swap the original and modified content"><span aria-hidden="true">⇅</span> <span data-i18n="swapButton">Swap</span></button>
                 <button id="format-json-btn" type="button" class="compare-button secondary-button" data-i18n="formatJson" title="Pretty-print any valid JSON on either side">Format JSON</button>
-                <button id="shortcuts-help-btn" type="button" class="icon-button" title="Keyboard shortcuts"><span aria-hidden="true">⌘</span> <span data-i18n="shortcutsHelp">Shortcuts</span></button>
+                <button id="shortcuts-help-btn" type="button" class="compare-button secondary-button" title="Keyboard shortcuts"><span aria-hidden="true">⌘</span> <span data-i18n="shortcutsHelp">Shortcuts</span></button>
                 <div class="shortcut-hint" data-i18n="shortcutHint">Tip: press Ctrl+Enter (⌘+Enter on Mac) to compare</div>
                 <div id="format-json-status" class="format-json-status" role="status" aria-live="polite"></div>
             </div>
@@ -221,7 +223,10 @@
                 <span class="legend-item legend-unchanged" data-i18n="legendUnchanged">unchanged</span>
             </div>
             <pre id="diff-output" data-user="geekneuron" data-host="codecompare" style="display: none;"></pre>
-            <div id="diff-output-lines" class="diff-output-lines"></div>
+            <div class="diff-output-wrapper">
+                <div id="diff-output-lines" class="diff-output-lines"></div>
+                <div id="diff-minimap" class="diff-minimap" role="button" tabindex="0" aria-label="Diff overview map"></div>
+            </div>
             <div id="diff-split-view" class="diff-split-view" style="display: none;">
                 <div class="split-panel">
                     <div class="split-panel-header" data-i18n="originalCode">Original Code</div>
@@ -260,17 +265,27 @@
                     <div class="batch-upload-row">
                         <div class="batch-upload-box">
                             <span class="control-label" data-i18n="batchOriginalFiles">Original files</span>
-                            <input type="file" id="batch-original-input" multiple>
+                            <div class="batch-upload-buttons">
+                                <button type="button" id="batch-original-files-btn" class="compare-button secondary-button" data-i18n="batchSelectFiles">Select Files...</button>
+                                <button type="button" id="batch-original-folder-btn" class="compare-button secondary-button" data-i18n="batchSelectFolder">Select Folder...</button>
+                            </div>
+                            <input type="file" id="batch-original-input" multiple hidden>
+                            <input type="file" id="batch-original-folder-input" webkitdirectory hidden>
                             <div id="batch-original-list" class="batch-file-list"></div>
                         </div>
                         <div class="batch-upload-box">
                             <span class="control-label" data-i18n="batchModifiedFiles">Modified files</span>
-                            <input type="file" id="batch-modified-input" multiple>
+                            <div class="batch-upload-buttons">
+                                <button type="button" id="batch-modified-files-btn" class="compare-button secondary-button" data-i18n="batchSelectFiles">Select Files...</button>
+                                <button type="button" id="batch-modified-folder-btn" class="compare-button secondary-button" data-i18n="batchSelectFolder">Select Folder...</button>
+                            </div>
+                            <input type="file" id="batch-modified-input" multiple hidden>
+                            <input type="file" id="batch-modified-folder-input" webkitdirectory hidden>
                             <div id="batch-modified-list" class="batch-file-list"></div>
                         </div>
                     </div>
                     <button type="button" id="batch-run-btn" class="compare-button" data-i18n="batchRun">Run Batch Compare</button>
-                    <p class="batch-hint" data-i18n="batchHint">Files are matched by name. Files present on only one side are listed as fully added or removed.</p>
+                    <p class="batch-hint" data-i18n="batchHint">Files are matched by name (or by relative path when a folder is selected). Files present on only one side are listed as fully added or removed.</p>
                     <div id="batch-results" class="batch-results"></div>
                 </div>
             </section>

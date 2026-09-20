@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const diffSearchCountEl = document.getElementById('diff-search-count');
     const diffSearchPrevBtn = document.getElementById('diff-search-prev-btn');
     const diffSearchNextBtn = document.getElementById('diff-search-next-btn');
+    const diffMinimapEl = document.getElementById('diff-minimap');
     const detectLanguageBtn = document.getElementById('detect-language-btn');
     const formatJsonBtn = document.getElementById('format-json-btn');
     const formatJsonStatusEl = document.getElementById('format-json-status');
@@ -147,8 +148,10 @@ document.addEventListener('DOMContentLoaded', () => {
             batchTitle: 'Batch Compare Files',
             batchOriginalFiles: 'Original files',
             batchModifiedFiles: 'Modified files',
+            batchSelectFiles: 'Select Files...',
+            batchSelectFolder: 'Select Folder...',
             batchRun: 'Run Batch Compare',
-            batchHint: 'Files are matched by name. Files present on only one side are listed as fully added or removed.',
+            batchHint: 'Files are matched by name (or by relative path when a folder is selected). Files present on only one side are listed as fully added or removed.',
             statTotalRuns: 'Comparisons run',
             statLinesAdded: 'Lines added',
             statLinesRemoved: 'Lines removed',
@@ -252,8 +255,10 @@ document.addEventListener('DOMContentLoaded', () => {
             batchTitle: 'مقایسهٔ دسته‌ای فایل‌ها',
             batchOriginalFiles: 'فایل‌های اصلی',
             batchModifiedFiles: 'فایل‌های تغییریافته',
+            batchSelectFiles: '...انتخاب فایل‌ها',
+            batchSelectFolder: '...انتخاب پوشه',
             batchRun: 'اجرای مقایسهٔ دسته‌ای',
-            batchHint: '.فایل‌ها بر اساس نام تطبیق داده می‌شوند. فایلی که فقط در یک طرف باشد، کامل اضافه‌شده یا حذف‌شده نمایش داده می‌شود',
+            batchHint: '.فایل‌ها بر اساس نام (یا مسیر نسبی هنگام انتخاب پوشه) تطبیق داده می‌شوند. فایلی که فقط در یک طرف باشد، کامل اضافه‌شده یا حذف‌شده نمایش داده می‌شود',
             statTotalRuns: 'مقایسه‌های انجام‌شده',
             statLinesAdded: 'خطوط افزوده‌شده',
             statLinesRemoved: 'خطوط حذف‌شده',
@@ -503,6 +508,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (diffSearchPrevBtn) diffSearchPrevBtn.addEventListener('click', () => goToSearchMatch(-1));
         if (diffSearchNextBtn) diffSearchNextBtn.addEventListener('click', () => goToSearchMatch(1));
+        if (diffMinimapEl) {
+            diffMinimapEl.addEventListener('click', e => handleMinimapClick(e.clientY));
+            diffMinimapEl.addEventListener('keydown', e => {
+                if (e.key !== 'Enter' && e.key !== ' ') return;
+                e.preventDefault();
+                const rect = diffMinimapEl.getBoundingClientRect();
+                handleMinimapClick(rect.top + rect.height / 2);
+            });
+        }
         if (shortcutsModal) {
             shortcutsModal.addEventListener('click', e => {
                 if (e.target === shortcutsModal) hideShortcutsHelp();
@@ -1127,6 +1141,51 @@ document.addEventListener('DOMContentLoaded', () => {
             renderUnifiedLines(lastDiffEntries);
         }
         applyDiffSearch();
+        renderMinimap();
+    }
+
+    function renderMinimap() {
+        if (!diffMinimapEl || !lastDiffEntries) return;
+        if (state.diffView === 'split') {
+            diffMinimapEl.style.display = 'none';
+            return;
+        }
+        diffMinimapEl.style.display = '';
+        const total = lastDiffEntries.length;
+        if (total === 0) {
+            diffMinimapEl.innerHTML = '';
+            return;
+        }
+        const marks = [];
+        lastDiffEntries.forEach((entry, index) => {
+            if (entry.type === 'unchanged') return;
+            const topPct = (index / total) * 100;
+            const cls = entry.moved ? 'moved' : entry.type;
+            marks.push(`<div class="minimap-mark ${cls}" style="top:${topPct}%" data-index="${index}"></div>`);
+        });
+        diffMinimapEl.innerHTML = marks.join('');
+    }
+
+    function scrollToEntryIndex(index) {
+        if (state.diffView === 'split' || !lastDiffEntries) return;
+        if (index >= unifiedRenderLimit) {
+            unifiedRenderLimit = index + RENDER_CHUNK_SIZE;
+            renderDiffOutput();
+        }
+        const el = diffOutputLinesEl.querySelector(`[data-entry-index="${index}"]`);
+        if (el && el.scrollIntoView) {
+            el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            el.classList.add('jump-highlight');
+            setTimeout(() => el.classList.remove('jump-highlight'), 900);
+        }
+    }
+
+    function handleMinimapClick(clientY) {
+        if (!diffMinimapEl || !lastDiffEntries || lastDiffEntries.length === 0) return;
+        const rect = diffMinimapEl.getBoundingClientRect();
+        const ratio = Math.min(1, Math.max(0, (clientY - rect.top) / rect.height));
+        const index = Math.min(lastDiffEntries.length - 1, Math.floor(ratio * lastDiffEntries.length));
+        scrollToEntryIndex(index);
     }
 
     function escapeHtml(str) {

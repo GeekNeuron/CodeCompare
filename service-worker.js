@@ -1,4 +1,4 @@
-const CACHE_NAME = 'codecompare-cache-v3';
+const CACHE_NAME = 'codecompare-cache-v4';
 const APP_SHELL = [
     './',
     './index.html',
@@ -12,6 +12,7 @@ const APP_SHELL = [
     './manifest.json',
     './icons/icon-192.png',
     './icons/icon-512.png',
+    './icons/icon.svg',
     './fonts/fira-code/400.css',
     './fonts/fira-code/700.css',
     './fonts/fira-code/files/fira-code-latin-400-normal.woff2',

@@ -321,6 +321,12 @@
 
     var batchOriginalInput = document.getElementById('batch-original-input');
     var batchModifiedInput = document.getElementById('batch-modified-input');
+    var batchOriginalFolderInput = document.getElementById('batch-original-folder-input');
+    var batchModifiedFolderInput = document.getElementById('batch-modified-folder-input');
+    var batchOriginalFilesBtn = document.getElementById('batch-original-files-btn');
+    var batchOriginalFolderBtn = document.getElementById('batch-original-folder-btn');
+    var batchModifiedFilesBtn = document.getElementById('batch-modified-files-btn');
+    var batchModifiedFolderBtn = document.getElementById('batch-modified-folder-btn');
     var batchOriginalList = document.getElementById('batch-original-list');
     var batchModifiedList = document.getElementById('batch-modified-list');
     var batchRunBtn = document.getElementById('batch-run-btn');
@@ -328,29 +334,49 @@
     var batchOriginalFiles = [];
     var batchModifiedFiles = [];
 
+    function getRelativeKey(file) {
+        var path = file.webkitRelativePath || file.name;
+        var slashIndex = path.indexOf('/');
+        return slashIndex === -1 ? path : path.slice(slashIndex + 1);
+    }
+
     function renderFileList(container, files) {
         if (!container) return;
         container.innerHTML = '';
         files.forEach(function (f) {
             var row = document.createElement('div');
             row.className = 'batch-file-row';
-            row.textContent = f.name;
+            row.textContent = getRelativeKey(f);
             container.appendChild(row);
         });
     }
 
-    if (batchOriginalInput) {
-        batchOriginalInput.addEventListener('change', function () {
-            batchOriginalFiles = Array.prototype.slice.call(batchOriginalInput.files);
-            renderFileList(batchOriginalList, batchOriginalFiles);
+    function wireBatchInput(triggerBtn, input, apply) {
+        if (!triggerBtn || !input) return;
+        triggerBtn.addEventListener('click', function () {
+            input.click();
+        });
+        input.addEventListener('change', function () {
+            apply(Array.prototype.slice.call(input.files));
         });
     }
-    if (batchModifiedInput) {
-        batchModifiedInput.addEventListener('change', function () {
-            batchModifiedFiles = Array.prototype.slice.call(batchModifiedInput.files);
-            renderFileList(batchModifiedList, batchModifiedFiles);
-        });
-    }
+
+    wireBatchInput(batchOriginalFilesBtn, batchOriginalInput, function (files) {
+        batchOriginalFiles = files;
+        renderFileList(batchOriginalList, batchOriginalFiles);
+    });
+    wireBatchInput(batchOriginalFolderBtn, batchOriginalFolderInput, function (files) {
+        batchOriginalFiles = files;
+        renderFileList(batchOriginalList, batchOriginalFiles);
+    });
+    wireBatchInput(batchModifiedFilesBtn, batchModifiedInput, function (files) {
+        batchModifiedFiles = files;
+        renderFileList(batchModifiedList, batchModifiedFiles);
+    });
+    wireBatchInput(batchModifiedFolderBtn, batchModifiedFolderInput, function (files) {
+        batchModifiedFiles = files;
+        renderFileList(batchModifiedList, batchModifiedFiles);
+    });
 
     function readFileAsText(file) {
         return new Promise(function (resolve, reject) {
@@ -434,11 +460,11 @@
 
         var originalMap = {};
         batchOriginalFiles.forEach(function (f) {
-            originalMap[f.name] = f;
+            originalMap[getRelativeKey(f)] = f;
         });
         var modifiedMap = {};
         batchModifiedFiles.forEach(function (f) {
-            modifiedMap[f.name] = f;
+            modifiedMap[getRelativeKey(f)] = f;
         });
 
         var allNames = [];
