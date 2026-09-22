@@ -210,6 +210,89 @@
         return result;
     }
 
+    function buildBaseAnnotation(diffEntries) {
+        const perLine = [];
+        const insertsBefore = [[]];
+        diffEntries.forEach(entry => {
+            if (entry.type === 'unchanged') {
+                perLine.push({ status: 'kept', line: entry.line });
+                insertsBefore.push([]);
+            } else if (entry.type === 'removed') {
+                perLine.push({ status: 'deleted', line: entry.line });
+                insertsBefore.push([]);
+            } else {
+                insertsBefore[insertsBefore.length - 1].push(entry.line);
+            }
+        });
+        return { perLine, insertsBefore };
+    }
+
+    function sameLines(a, b) {
+        return a.length === b.length && a.every((v, i) => v === b[i]);
+    }
+
+    function mergeThreeWay(baseText, mineText, theirsText, options) {
+        const mineLabel = (options && options.mineLabel) || 'Mine';
+        const theirsLabel = (options && options.theirsLabel) || 'Theirs';
+
+        const diffMine = computeLineDiff(baseText, mineText, {});
+        const diffTheirs = computeLineDiff(baseText, theirsText, {});
+
+        const mineAnno = buildBaseAnnotation(diffMine);
+        const theirsAnno = buildBaseAnnotation(diffTheirs);
+
+        const total = mineAnno.perLine.length;
+        const outputLines = [];
+        const segments = [];
+        let conflictCount = 0;
+
+        function emitInsertions(k) {
+            const mineIns = mineAnno.insertsBefore[k] || [];
+            const theirsIns = theirsAnno.insertsBefore[k] || [];
+            if (sameLines(mineIns, theirsIns)) {
+                mineIns.forEach(line => {
+                    outputLines.push(line);
+                    segments.push({ line, source: 'both' });
+                });
+            } else if (mineIns.length === 0) {
+                theirsIns.forEach(line => {
+                    outputLines.push(line);
+                    segments.push({ line, source: 'theirs' });
+                });
+            } else if (theirsIns.length === 0) {
+                mineIns.forEach(line => {
+                    outputLines.push(line);
+                    segments.push({ line, source: 'mine' });
+                });
+            } else {
+                conflictCount++;
+                const conflictLines = [`<<<<<<< ${mineLabel}`, ...mineIns, '=======', ...theirsIns, `>>>>>>> ${theirsLabel}`];
+                conflictLines.forEach(line => {
+                    outputLines.push(line);
+                    segments.push({ line, source: 'conflict' });
+                });
+            }
+        }
+
+        for (let k = 0; k < total; k++) {
+            emitInsertions(k);
+            const mineKept = mineAnno.perLine[k].status === 'kept';
+            const theirsKept = theirsAnno.perLine[k].status === 'kept';
+            if (mineKept && theirsKept) {
+                const line = mineAnno.perLine[k].line;
+                outputLines.push(line);
+                segments.push({ line, source: 'both' });
+            }
+        }
+        emitInsertions(total);
+
+        return {
+            mergedText: outputLines.join('\n'),
+            conflictCount,
+            segments
+        };
+    }
+
     function applyIgnoreBlankLines(diffEntries) {
         return diffEntries.map(entry => {
             if ((entry.type === 'added' || entry.type === 'removed') && entry.line.trim() === '') {
@@ -361,7 +444,7 @@
     const api = {
         computeLineDiff, formatDiffText, computeStats, buildSideBySideRows,
         computeWordDiff, foldRuns, applyIgnoreRules, applyIgnoreBlankLines, detectMovedBlocks, buildUnifiedPatch,
-        detectEncodingIssues, normalizeLineEndingsAndBom, detectLineEndingStyle
+        detectEncodingIssues, normalizeLineEndingsAndBom, detectLineEndingStyle, mergeThreeWay
     };
 
     if (typeof module !== 'undefined' && module.exports) {

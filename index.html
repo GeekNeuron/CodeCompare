@@ -51,6 +51,10 @@
                     <span class="sidebar-link-icon" aria-hidden="true">📚</span>
                     <span data-i18n="navBatch">Batch Compare</span>
                 </button>
+                <button type="button" class="sidebar-link" data-view="merge">
+                    <span class="sidebar-link-icon" aria-hidden="true">🔀</span>
+                    <span data-i18n="navMerge">3-Way Merge</span>
+                </button>
                 <button type="button" class="sidebar-link" data-view="settings">
                     <span class="sidebar-link-icon" aria-hidden="true">⚙</span>
                     <span data-i18n="navSettings">Settings</span>
@@ -287,6 +291,41 @@
                     <button type="button" id="batch-run-btn" class="compare-button" data-i18n="batchRun">Run Batch Compare</button>
                     <p class="batch-hint" data-i18n="batchHint">Files are matched by name (or by relative path when a folder is selected). Files present on only one side are listed as fully added or removed.</p>
                     <div id="batch-results" class="batch-results"></div>
+                </div>
+            </section>
+
+            <section id="view-merge" class="app-view">
+                <div class="view-panel merge-panel">
+                    <div class="view-panel-header">
+                        <h3 data-i18n="mergeTitle">Three-Way Merge</h3>
+                        <button type="button" id="merge-run-btn" class="compare-button" data-i18n="mergeRun">Merge</button>
+                    </div>
+                    <p class="batch-hint" data-i18n="mergeHint">Compare Mine and Theirs against a common Base. Non-overlapping changes merge automatically; overlapping changes are marked as conflicts for you to resolve.</p>
+                    <div class="merge-inputs-row">
+                        <div class="merge-input-box">
+                            <span class="control-label" data-i18n="mergeBaseLabel">Base</span>
+                            <textarea id="merge-base-input" class="merge-textarea" spellcheck="false" placeholder="Common ancestor..."></textarea>
+                        </div>
+                        <div class="merge-input-box">
+                            <span class="control-label" data-i18n="mergeMineLabel">Mine</span>
+                            <textarea id="merge-mine-input" class="merge-textarea" spellcheck="false" placeholder="Your version..."></textarea>
+                        </div>
+                        <div class="merge-input-box">
+                            <span class="control-label" data-i18n="mergeTheirsLabel">Theirs</span>
+                            <textarea id="merge-theirs-input" class="merge-textarea" spellcheck="false" placeholder="Their version..."></textarea>
+                        </div>
+                    </div>
+                    <div id="merge-result-section" class="merge-result-section" hidden>
+                        <div class="view-panel-header">
+                            <h3 data-i18n="mergeResultTitle">Merge Result</h3>
+                            <span id="merge-conflict-badge" class="merge-conflict-badge"></span>
+                            <div class="view-panel-actions">
+                                <button type="button" id="merge-copy-btn" class="compare-button secondary-button" data-i18n="mergeCopy">Copy Result</button>
+                                <button type="button" id="merge-download-btn" class="compare-button secondary-button" data-i18n="mergeDownload">Download Result</button>
+                            </div>
+                        </div>
+                        <textarea id="merge-result-output" class="merge-textarea merge-result-textarea" spellcheck="false"></textarea>
+                    </div>
                 </div>
             </section>
 

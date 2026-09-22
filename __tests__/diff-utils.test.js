@@ -1,4 +1,4 @@
-const { computeLineDiff, formatDiffText, computeStats, buildSideBySideRows, computeWordDiff, foldRuns, applyIgnoreRules, applyIgnoreBlankLines, detectMovedBlocks, buildUnifiedPatch, detectEncodingIssues, normalizeLineEndingsAndBom } = require('../diff-utils.js');
+const { computeLineDiff, formatDiffText, computeStats, buildSideBySideRows, computeWordDiff, foldRuns, applyIgnoreRules, applyIgnoreBlankLines, detectMovedBlocks, buildUnifiedPatch, detectEncodingIssues, normalizeLineEndingsAndBom, mergeThreeWay } = require('../diff-utils.js');
 
 describe('computeLineDiff', () => {
     test('identical texts produce only unchanged lines', () => {
@@ -605,5 +605,111 @@ describe('normalizeLineEndingsAndBom', () => {
         const original = normalizeLineEndingsAndBom('\uFEFFa\r\nb\r\n');
         const modified = normalizeLineEndingsAndBom('a\nb\n');
         expect(detectEncodingIssues(original, modified).hasIssue).toBe(false);
+    });
+});
+
+describe('mergeThreeWay', () => {
+    test('no changes on either side: merged text equals base', () => {
+        const base = 'a\nb\nc\n';
+        const result = mergeThreeWay(base, base, base);
+        expect(result.mergedText).toBe('a\nb\nc');
+        expect(result.conflictCount).toBe(0);
+    });
+
+    test('a change on only one side is taken cleanly, no conflict', () => {
+        const base = 'a\nb\nc\n';
+        const mine = 'a\nB\nc\n';
+        const theirs = 'a\nb\nc\n';
+        const result = mergeThreeWay(base, mine, theirs);
+        expect(result.mergedText).toBe('a\nB\nc');
+        expect(result.conflictCount).toBe(0);
+    });
+
+    test('non-overlapping changes on both sides merge cleanly', () => {
+        const base = 'a\nb\nc\nd\ne\n';
+        const mine = 'A\nb\nc\nd\ne\n';
+        const theirs = 'a\nb\nc\nd\nE\n';
+        const result = mergeThreeWay(base, mine, theirs);
+        expect(result.mergedText).toBe('A\nb\nc\nd\nE');
+        expect(result.conflictCount).toBe(0);
+    });
+
+    test('identical changes on both sides merge without duplication', () => {
+        const base = 'a\nb\nc\n';
+        const mine = 'a\nCHANGED\nc\n';
+        const theirs = 'a\nCHANGED\nc\n';
+        const result = mergeThreeWay(base, mine, theirs);
+        expect(result.mergedText).toBe('a\nCHANGED\nc');
+        expect(result.conflictCount).toBe(0);
+    });
+
+    test('conflicting changes to the same line produce a conflict block', () => {
+        const base = 'a\nb\nc\n';
+        const mine = 'a\nMINE\nc\n';
+        const theirs = 'a\nTHEIRS\nc\n';
+        const result = mergeThreeWay(base, mine, theirs, { mineLabel: 'Mine', theirsLabel: 'Theirs' });
+        expect(result.conflictCount).toBe(1);
+        expect(result.mergedText).toBe('a\n<<<<<<< Mine\nMINE\n=======\nTHEIRS\n>>>>>>> Theirs\nc');
+    });
+
+    test('a one-sided deletion is applied without conflict', () => {
+        const base = 'a\nb\nc\n';
+        const mine = 'a\nc\n';
+        const theirs = 'a\nb\nc\n';
+        const result = mergeThreeWay(base, mine, theirs);
+        expect(result.mergedText).toBe('a\nc');
+        expect(result.conflictCount).toBe(0);
+    });
+
+    test('both sides deleting the same line agree, no conflict', () => {
+        const base = 'a\nb\nc\n';
+        const mine = 'a\nc\n';
+        const theirs = 'a\nc\n';
+        const result = mergeThreeWay(base, mine, theirs);
+        expect(result.mergedText).toBe('a\nc');
+        expect(result.conflictCount).toBe(0);
+    });
+
+    test('a pure insertion by only one side is included cleanly', () => {
+        const base = 'a\nb\n';
+        const mine = 'a\nNEW\nb\n';
+        const theirs = 'a\nb\n';
+        const result = mergeThreeWay(base, mine, theirs);
+        expect(result.mergedText).toBe('a\nNEW\nb');
+        expect(result.conflictCount).toBe(0);
+    });
+
+    test('conflicting insertions at the same position produce a conflict block', () => {
+        const base = 'a\nb\n';
+        const mine = 'a\nMINE_INSERT\nb\n';
+        const theirs = 'a\nTHEIRS_INSERT\nb\n';
+        const result = mergeThreeWay(base, mine, theirs);
+        expect(result.conflictCount).toBe(1);
+        expect(result.mergedText).toContain('<<<<<<< Mine');
+        expect(result.mergedText).toContain('MINE_INSERT');
+        expect(result.mergedText).toContain('THEIRS_INSERT');
+    });
+
+    test('trailing insertion at the very end of the file is handled', () => {
+        const base = 'a\nb\n';
+        const mine = 'a\nb\nMINE_TAIL\n';
+        const theirs = 'a\nb\n';
+        const result = mergeThreeWay(base, mine, theirs);
+        expect(result.mergedText).toBe('a\nb\nMINE_TAIL');
+    });
+
+    test('custom labels are used in conflict markers', () => {
+        const base = 'x\n';
+        const mine = 'MINE_VERSION\n';
+        const theirs = 'THEIRS_VERSION\n';
+        const result = mergeThreeWay(base, mine, theirs, { mineLabel: 'feature-branch', theirsLabel: 'main' });
+        expect(result.mergedText).toContain('<<<<<<< feature-branch');
+        expect(result.mergedText).toContain('>>>>>>> main');
+    });
+
+    test('an empty base with content added on both sides identically merges cleanly', () => {
+        const result = mergeThreeWay('', 'hello\n', 'hello\n');
+        expect(result.mergedText).toBe('hello');
+        expect(result.conflictCount).toBe(0);
     });
 });

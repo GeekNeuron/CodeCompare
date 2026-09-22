@@ -514,6 +514,75 @@
         batchRunBtn.addEventListener('click', runBatchCompare);
     }
 
+    var mergeBaseInput = document.getElementById('merge-base-input');
+    var mergeMineInput = document.getElementById('merge-mine-input');
+    var mergeTheirsInput = document.getElementById('merge-theirs-input');
+    var mergeRunBtn = document.getElementById('merge-run-btn');
+    var mergeResultSection = document.getElementById('merge-result-section');
+    var mergeResultOutput = document.getElementById('merge-result-output');
+    var mergeConflictBadge = document.getElementById('merge-conflict-badge');
+    var mergeCopyBtn = document.getElementById('merge-copy-btn');
+    var mergeDownloadBtn = document.getElementById('merge-download-btn');
+
+    function runThreeWayMerge() {
+        if (!window.CodeCompareDiff || !mergeResultSection) return;
+        var base = mergeBaseInput.value;
+        var mine = mergeMineInput.value;
+        var theirs = mergeTheirsInput.value;
+        var mineLabel = isFa() ? 'من' : 'Mine';
+        var theirsLabel = isFa() ? 'طرف مقابل' : 'Theirs';
+        var result = window.CodeCompareDiff.mergeThreeWay(base, mine, theirs, {
+            mineLabel: mineLabel,
+            theirsLabel: theirsLabel
+        });
+        mergeResultOutput.value = result.mergedText;
+        mergeResultSection.hidden = false;
+        if (result.conflictCount > 0) {
+            mergeConflictBadge.textContent = isFa()
+                ? result.conflictCount + ' تعارض یافت شد'
+                : result.conflictCount + (result.conflictCount === 1 ? ' conflict found' : ' conflicts found');
+            mergeConflictBadge.className = 'merge-conflict-badge has-conflicts';
+        } else {
+            mergeConflictBadge.textContent = isFa() ? 'بدون تعارض' : 'No conflicts';
+            mergeConflictBadge.className = 'merge-conflict-badge';
+        }
+    }
+
+    if (mergeRunBtn) {
+        mergeRunBtn.addEventListener('click', runThreeWayMerge);
+    }
+    if (mergeCopyBtn) {
+        mergeCopyBtn.addEventListener('click', function () {
+            var text = mergeResultOutput.value;
+            var flashOk = function () { flashLabel(mergeCopyBtn, isFa() ? '!کپی شد' : 'Copied!'); };
+            var flashFail = function () { flashLabel(mergeCopyBtn, isFa() ? 'ناموفق' : 'Failed'); };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(flashOk).catch(flashFail);
+            } else {
+                mergeResultOutput.select();
+                try {
+                    document.execCommand('copy');
+                    flashOk();
+                } catch {
+                    flashFail();
+                }
+            }
+        });
+    }
+    if (mergeDownloadBtn) {
+        mergeDownloadBtn.addEventListener('click', function () {
+            var blob = new Blob([mergeResultOutput.value], { type: 'text/plain' });
+            var url = URL.createObjectURL(blob);
+            var link = document.createElement('a');
+            link.href = url;
+            link.download = 'merged.txt';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        });
+    }
+
     window.CodeCompareDashboard = {
         recordRun: recordRun
     };

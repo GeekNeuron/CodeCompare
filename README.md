@@ -37,7 +37,8 @@ CodeCompare is a web-based utility to compare two snippets of code or text and v
 
 ### Dashboard
 * **History** — every comparison you run is recorded locally (language, added/removed counts, a similarity score), with restore, delete, clear, and JSON export/import.
-* **Batch Compare** — upload a set of "original" files and a set of "modified" files; they're matched by filename and diffed all at once, with a results table (added/removed/similarity per file, files present on only one side flagged as fully added/removed) and a button to open any pair in the normal Compare view.
+* **Batch Compare** — upload a set of "original" files and a set of "modified" files; they're matched by filename (or relative path when a whole folder is selected) and diffed all at once, with a results table (added/removed/similarity per file, files present on only one side flagged as fully added/removed) and a button to open any pair in the normal Compare view.
+* **3-Way Merge** — merge a "Mine" and a "Theirs" version against a common "Base": non-overlapping changes merge automatically, identical changes on both sides merge without duplication, and overlapping/conflicting changes are marked with standard `<<<<<<<` / `=======` / `>>>>>>>` conflict markers in an editable result you can fix up, copy, or download.
 * **Settings** — reset all locally stored data, and pick a syntax color theme (8 official Prism themes, or auto-match the app's light/dark mode).
 
 ### General
@@ -127,7 +128,8 @@ CodeCompare/
 * Move detection matches on exact line content (after trimming) — it won't catch a moved block that was also edited along the way.
 * Share links encode the full comparison in the URL itself; very large comparisons produce very long links, which some chat apps or SMS may truncate. There's no length limit enforced, but a console warning is logged past ~6000 characters.
 * The Line Numbers and Toolbar Prism plugins only apply to the plain (non-collapsed) Unified view and to the Split view's own line numbers - when Unified view collapses unchanged lines, it renders as several independently highlighted chunks, which don't support those two particular plugins (every other plugin still works per chunk).
-* Batch Compare matches files by exact filename only (no folder-structure/subfolder matching) and keeps everything in memory for the session — nothing is saved unless you open a pair and it gets recorded in History.
+* Batch Compare keeps everything in memory for the session — nothing is saved unless you open a pair and it gets recorded in History.
+* 3-Way Merge aligns changes line-by-line against the Base rather than doing full hunk-based alignment like `git merge-file`; on a narrow edge case — one side leaves a line untouched right where the other side both changes that line *and* inserts new content immediately next to it — it can silently take the changed side instead of flagging a conflict there. Everyday single-line and non-adjacent changes (the vast majority of real merges) are handled correctly and match `git merge-file`'s output; always review the result before using it.
 * No folder/three-way-merge comparison, no real-time multi-user collaboration, and no AI-generated diff summaries — these are intentionally out of scope to keep the tool 100% client-side and offline.
 
 ## Contributing

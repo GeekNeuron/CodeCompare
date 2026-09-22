@@ -73,7 +73,8 @@ export default [
         URL: 'readonly',
         FileReader: 'readonly',
         setTimeout: 'readonly',
-        Promise: 'readonly'
+        Promise: 'readonly',
+        navigator: 'readonly'
       }
     },
     rules: {
