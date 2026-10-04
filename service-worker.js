@@ -1,4 +1,4 @@
-const CACHE_NAME = 'codecompare-cache-v4';
+const CACHE_NAME = 'codecompare-cache-v5';
 const APP_SHELL = [
     './',
     './index.html',
@@ -17,22 +17,6 @@ const APP_SHELL = [
     './fonts/fira-code/700.css',
     './fonts/fira-code/files/fira-code-latin-400-normal.woff2',
     './fonts/fira-code/files/fira-code-latin-700-normal.woff2',
-    './fonts/vazirmatn/400.css',
-    './fonts/vazirmatn/500.css',
-    './fonts/vazirmatn/600.css',
-    './fonts/vazirmatn/700.css',
-    './fonts/vazirmatn/files/vazirmatn-arabic-400-normal.woff2',
-    './fonts/vazirmatn/files/vazirmatn-arabic-500-normal.woff2',
-    './fonts/vazirmatn/files/vazirmatn-arabic-600-normal.woff2',
-    './fonts/vazirmatn/files/vazirmatn-arabic-700-normal.woff2',
-    './fonts/vazirmatn/files/vazirmatn-latin-400-normal.woff2',
-    './fonts/vazirmatn/files/vazirmatn-latin-500-normal.woff2',
-    './fonts/vazirmatn/files/vazirmatn-latin-600-normal.woff2',
-    './fonts/vazirmatn/files/vazirmatn-latin-700-normal.woff2',
-    './fonts/vazirmatn/files/vazirmatn-latin-ext-400-normal.woff2',
-    './fonts/vazirmatn/files/vazirmatn-latin-ext-500-normal.woff2',
-    './fonts/vazirmatn/files/vazirmatn-latin-ext-600-normal.woff2',
-    './fonts/vazirmatn/files/vazirmatn-latin-ext-700-normal.woff2',
     './lib/prism.js',
     './lib/prism/components/prism-abap.min.js',
     './lib/prism/components/prism-abnf.min.js',

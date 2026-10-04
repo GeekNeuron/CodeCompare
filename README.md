@@ -1,6 +1,6 @@
 # CodeCompare
 
-CodeCompare is a web-based utility to compare two snippets of code or text and view a syntax-highlighted, line-by-line diff, wrapped in a small dashboard (Compare / History / Batch Compare / Settings). It's built with vanilla HTML, CSS, and JavaScript, and is fully self-contained: Prism.js (core, every language grammar, every plugin, and its themes) plus the Vazirmatn and Fira Code fonts are all bundled locally, so it works completely offline from the very first load, with no CDN dependency at all.
+CodeCompare is a web-based utility to compare two snippets of code or text and view a syntax-highlighted, line-by-line diff, wrapped in a small dashboard (Compare / History / Batch Compare / Settings). It's built with vanilla HTML, CSS, and JavaScript, and is fully self-contained: Prism.js (core, every language grammar, every plugin, and its themes) plus the Fira Code font are all bundled locally, so it works completely offline from the very first load, with no CDN dependency at all.
 
 ## Live Demo
 
@@ -42,11 +42,11 @@ CodeCompare is a web-based utility to compare two snippets of code or text and v
 * **Settings** — reset all locally stored data, and pick a syntax color theme (8 official Prism themes, or auto-match the app's light/dark mode).
 
 ### General
-* **English / Persian interface**, with automatic RTL layout for Persian, and Unicode-aware word-level diffing (Persian/Arabic text diffs word-by-word, not character-by-character).
-* **Light/Dark theme** — defaults to your system preference and is remembered.
-* **Keyboard shortcuts** — see the in-app shortcuts dialog (the `⌘` button) for the full list.
+* **Unicode-aware word-level diffing** — Persian/Arabic and other non-ASCII text diffs word-by-word, not character-by-character. The interface itself is English only.
+* **Light/Dark theme** — defaults to your system preference and is remembered. All icons are inline SVG (no emoji), and scrollbars are thin and appear only while scrolling.
+* **Keyboard shortcuts** — the in-app shortcuts dialog (Shortcuts button) shows the full list, using `Ctrl`/`Alt` on Windows and Linux and `⌘`/`⌥` on macOS and iOS.
 * **Settings persistence** — everything above is saved in `localStorage`.
-* **Installable / fully offline (PWA)** — installable as an app; every asset (including every Prism language and both fonts) is precached on first load, so it works with no network connection at all, even on a first, offline install.
+* **Installable / fully offline (PWA)** — installable as an app; every asset (including every Prism language and the font) is precached on first load, so it works with no network connection at all, even on a first, offline install.
 * **Responsive layout** — usable on desktop, tablet, and mobile screen sizes, with a collapsible sidebar on small screens.
 
 ## How to Use
@@ -100,12 +100,12 @@ CodeCompare/
 ├── share-utils.js        # Shareable-link encoding/decoding (unit tested)
 ├── json-utils.js         # JSON detection/pretty-print helpers (unit tested)
 ├── __tests__/            # Jest unit tests for diff-utils.js, share-utils.js, json-utils.js
-├── service-worker.js   # Precaches the entire app (including every Prism language/theme and both fonts) for full offline use
+├── service-worker.js   # Precaches the entire app (including every Prism language/theme and the font) for full offline use
 ├── manifest.json        # PWA metadata (name, icons, theme color)
 ├── icons/               # App icons used by the PWA manifest
 ├── lib/prism.js         # Bundled Prism.js core
 ├── lib/prism/           # Bundled Prism plugins, every language grammar, and 8 themes (all local, no CDN)
-├── fonts/               # Bundled Vazirmatn and Fira Code font files (all local, no CDN)
+├── fonts/               # Bundled Fira Code font files (all local, no CDN)
 ├── .github/workflows/  # CI and GitHub Pages deployment
 └── README.md
 ```

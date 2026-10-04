@@ -713,3 +713,25 @@ describe('mergeThreeWay', () => {
         expect(result.conflictCount).toBe(0);
     });
 });
+
+describe('computeLineDiff with ignoreWhitespace', () => {
+    test('indentation and inner whitespace runs are ignored', () => {
+        const diff = computeLineDiff('a\n  b  c\nd', 'a\nb c\nd', { ignoreWhitespace: true });
+        expect(diff.every(d => d.type === 'unchanged')).toBe(true);
+    });
+
+    test('real content changes are still detected', () => {
+        const diff = computeLineDiff('a\n  b', 'a\n  c', { ignoreWhitespace: true });
+        expect(diff.filter(d => d.type !== 'unchanged')).toHaveLength(2);
+    });
+
+    test('combines with ignoreCase', () => {
+        const diff = computeLineDiff('  Hello   World', 'hello world', { ignoreWhitespace: true, ignoreCase: true });
+        expect(diff.every(d => d.type === 'unchanged')).toBe(true);
+    });
+
+    test('without the option, whitespace differences count', () => {
+        const diff = computeLineDiff('a  b', 'a b');
+        expect(diff.some(d => d.type !== 'unchanged')).toBe(true);
+    });
+});

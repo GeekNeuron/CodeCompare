@@ -54,7 +54,16 @@
 
     function computeLineDiff(text1, text2, options) {
         const ignoreCase = !!(options && options.ignoreCase);
-        const keyFn = ignoreCase ? line => line.toLowerCase() : null;
+        const ignoreWhitespace = !!(options && options.ignoreWhitespace);
+        let keyFn = null;
+        if (ignoreCase || ignoreWhitespace) {
+            keyFn = line => {
+                let key = line;
+                if (ignoreWhitespace) key = key.replace(/\s+/g, ' ').trim();
+                if (ignoreCase) key = key.toLowerCase();
+                return key;
+            };
+        }
         const linesA = toKeyValue(toLines(text1), keyFn);
         const linesB = toKeyValue(toLines(text2), keyFn);
 

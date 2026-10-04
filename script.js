@@ -29,8 +29,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const langSearchInput = document.getElementById('language-search');
     const langOptionsContainer = document.getElementById('language-options');
     const pluginToggles = document.querySelectorAll('.plugins-group input, .process-section input');
-    const newComparisonBtn = document.getElementById('new-comparison-btn');    const comparisonContainer = document.getElementById('comparison-container');
-    const langToggleBtn = document.getElementById('lang-toggle-btn');
+    const newComparisonBtn = document.getElementById('new-comparison-btn');
+    const comparisonContainer = document.getElementById('comparison-container');
+    const advancedSettingsEl = document.querySelector('.advanced-settings');
+    const shortcutHintEl = document.getElementById('shortcut-hint');
+    const shortcutsPlatformEl = document.getElementById('shortcuts-platform');
     const uploadOriginalBtn = document.getElementById('upload-original-btn');
     const uploadModifiedBtn = document.getElementById('upload-modified-btn');
     const uploadOriginalInput = document.getElementById('upload-original-input');
@@ -71,6 +74,27 @@ document.addEventListener('DOMContentLoaded', () => {
     let expandedSplitFolds = new Set();
     let formatJsonStatusTimer = null;
 
+    const icon = (name, cls) =>
+        `<svg class="ico${cls ? ' ' + cls : ''}" aria-hidden="true"><use href="#i-${name}"></use></svg>`;
+
+    function detectPlatform() {
+        const uaData = navigator.userAgentData;
+        const ua = navigator.userAgent || '';
+        const raw = (uaData && uaData.platform) || navigator.platform || '';
+        if (/android/i.test(ua)) return { id: 'android', label: 'Android' };
+        if (/iphone|ipad|ipod/i.test(ua)) return { id: 'ios', label: 'iOS' };
+        if (/mac/i.test(raw) || /mac os/i.test(ua)) return { id: 'mac', label: 'macOS' };
+        if (/win/i.test(raw) || /windows/i.test(ua)) return { id: 'windows', label: 'Windows' };
+        if (/cros/i.test(ua)) return { id: 'linux', label: 'ChromeOS' };
+        if (/linux|x11/i.test(raw) || /linux|x11/i.test(ua)) return { id: 'linux', label: 'Linux' };
+        return { id: 'other', label: 'your system' };
+    }
+
+    const PLATFORM = detectPlatform();
+    const IS_MAC = PLATFORM.id === 'mac' || PLATFORM.id === 'ios';
+    const MOD_KEY = IS_MAC ? '\u2318' : 'Ctrl';
+    const ALT_KEY = IS_MAC ? '\u2325' : 'Alt';
+
     const translations = {
         en: {
             pageTitle: 'CodeCompare Pro',
@@ -92,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ignorePresetSave: 'Save preset',
             ignorePresetDelete: 'Delete preset',
             swapButton: 'Swap',
-            shortcutsHelp: 'Keyboard shortcuts',
+            shortcutsHelp: 'Shortcuts',
             detectLanguage: 'Auto-detect',
             ignoreCase: 'Ignore Case',
             liveDiff: 'Live Diff (auto-compare while typing)',
@@ -105,7 +129,6 @@ document.addEventListener('DOMContentLoaded', () => {
             modifiedCode: 'Modified Code',
             uploadFile: 'Upload File',
             compareButton: 'Compare',
-            shortcutHint: 'Tip: press Ctrl+Enter (⌘+Enter on Mac) to compare',
             formatJson: 'Format JSON',
             formatJsonSuccess: 'Formatted as JSON.',
             formatJsonEmpty: 'Nothing to format yet — paste some content first.',
@@ -178,7 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
             historyDelete: 'Delete',
             settingsTitle: 'Settings',
             settingsAppearance: 'Appearance',
-            settingsAppearanceHint: 'Toggle theme and interface language from the top bar.',
+            settingsAppearanceHint: 'Switch between light and dark theme from the top bar.',
             settingsSyntaxThemeTitle: 'Code color theme',
             settingsSyntaxThemeHint: 'Choose the syntax highlighting theme used for code.',
             themeAuto: 'Auto (match app theme)',
@@ -188,129 +211,11 @@ document.addEventListener('DOMContentLoaded', () => {
             settingsAboutTitle: 'About',
             settingsAboutHint: 'CodeCompare is an open-source, client-side diff tool.',
             resetConfirm: 'This will clear all saved settings and comparison history. Continue?'
-        },
-        fa: {
-            pageTitle: 'مقایسه‌گر کد',
-            viewOnGithub: 'مشاهده در گیت‌هاب',
-            languageLabel: ':زبان',
-            languageSearchPlaceholder: 'جستجوی زبان...',
-            advancedSettings: 'تنظیمات پیشرفته',
-            pluginsLabel: ':افزونه‌ها',
-            pluginShowInvisibles: 'نمایش کاراکترهای نامرئی',
-            pluginAutolinker: 'لینک خودکار',
-            pluginMatchBraces: 'تطبیق پرانتزها',
-            pluginInlineColor: 'نمایش رنگ درون‌خطی',
-            pluginPreviewers: 'پیش‌نمایش CSS',
-            pluginCommandLine: 'خط فرمان',
-            processingLabel: ':پردازش',
-            ignoreWhitespace: 'نادیده گرفتن فاصله‌ها',
-            ignoreBlankLines: 'نادیده گرفتن خطوط خالی',
-            ignorePresetPlaceholder: '— پریست‌های ذخیره‌شده —',
-            ignorePresetSave: 'ذخیرهٔ پریست',
-            ignorePresetDelete: 'حذف پریست',
-            swapButton: 'جابه‌جایی',
-            shortcutsHelp: 'میان‌برهای کیبورد',
-            detectLanguage: 'تشخیص خودکار',
-            ignoreCase: 'نادیده گرفتن بزرگی/کوچکی حروف',
-            liveDiff: 'دیف زنده (مقایسهٔ خودکار حین تایپ)',
-            detectMoved: 'برجسته‌سازی کد جابه‌جاشده',
-            customIgnoreRules: ':(regex قوانین نادیده‌گیری سفارشی (هر خط یک الگوی',
-            ignorePatternsPlaceholder: '\\d{4}-\\d{2}-\\d{2} :مثال',
-            ignoreRemoveLines: 'حذف خطوط منطبق',
-            ignoreStripMatches: 'حذف بخش‌های منطبق داخل خط',
-            originalCode: 'کد اصلی',
-            modifiedCode: 'کد تغییریافته',
-            uploadFile: 'بارگذاری فایل',
-            compareButton: 'مقایسه',
-            shortcutHint: 'Ctrl+Enter (⌘+Enter در مک) را برای مقایسه بزنید :راهنما',
-            formatJson: 'فرمت JSON',
-            formatJsonSuccess: '.به‌صورت JSON فرمت شد',
-            formatJsonEmpty: '.چیزی برای فرمت‌کردن نیست — اول محتوایی وارد کنید',
-            formatJsonNoValidJson: '.هیچ‌کدام از دو طرف JSON معتبر به نظر نمی‌رسند',
-            newComparison: 'مقایسه جدید',
-            unifiedView: 'یکپارچه',
-            splitView: 'دوستونه',
-            collapseUnchanged: 'جمع‌کردن خطوط بدون تغییر',
-            wrapLines: 'شکستن خطوط بلند',
-            foldShowLines: 'نمایش {count} خط بدون تغییر پنهان‌شده',
-            loadMoreRows: 'نمایش {count} ردیف بیشتر ({remaining} ردیف برای حفظ کارایی پنهان شده)',
-            copyDiff: 'کپی تفاوت‌ها',
-            copyDiffDone: '!کپی شد',
-            downloadDiff: 'دانلود .diff',
-            downloadPatch: 'دانلود .patch',
-            exportHtmlReport: 'خروجی گزارش HTML',
-            printPdf: 'چاپ / ذخیره به‌صورت PDF',
-            shareLink: 'اشتراک‌گذاری لینک',
-            shareLinkCopied: '!لینک کپی شد',
-            shareLinkManualCopy: ':این لینک را برای اشتراک‌گذاری مقایسه کپی کنید',
-            copyLineManual: ':این خط را کپی کنید',
-            searchInDiff: '...جست‌وجو در نتیجه',
-            searchNoMatches: 'موردی یافت نشد',
-            searchMatchCount: '{current}/{total}',
-            copyDiffManualCopy: ':این تفاوت‌ها را کپی کنید',
-            shareLinkTooLong: '.توجه: این لینک نسبتاً طولانی است و ممکن است در همه‌جا کار نکند (مثلاً برخی اپ‌های پیام‌رسان لینک‌های طولانی را کوتاه می‌کنند)',
-            normalizeAndRecompare: 'یکسان‌سازی و مقایسهٔ مجدد',
-            shareLoadFailed: '.بارگذاری مقایسه از این لینک ممکن نشد (ممکن است خراب باشد یا فرمت پشتیبانی‌نشده داشته باشد)',
-            legendAdded: 'افزوده‌شده +',
-            legendRemoved: 'حذف‌شده \u2212',
-            legendUnchanged: 'بدون تغییر',
-            linesLabel: 'خطوط',
-            statsSummary: 'حذف‌شده {removed} \u00b7 افزوده‌شده {added}',
-            uploadTooLarge: '.(حداکثر ۲ مگابایت) حجم فایل برای بارگذاری زیاد است',
-            uploadFailed: '.خواندن این فایل ممکن نشد',
-            navCompare: 'مقایسه',
-            navHistory: 'تاریخچه',
-            navSettings: 'تنظیمات',
-            navBatch: 'مقایسهٔ دسته‌ای',
-            navMerge: 'ادغام سه‌طرفه',
-            mergeTitle: 'ادغام سه‌طرفه',
-            mergeRun: 'ادغام',
-            mergeHint: '.نسخهٔ من و طرف مقابل رو نسبت به یک نسخهٔ پایهٔ مشترک مقایسه می‌کنه. تغییرات غیرهم‌پوشان خودکار ادغام می‌شن؛ تغییرات هم‌پوشان به‌عنوان تعارض علامت‌گذاری می‌شن تا خودتون حلشون کنید',
-            mergeBaseLabel: 'پایه (Base)',
-            mergeMineLabel: 'نسخهٔ من',
-            mergeTheirsLabel: 'نسخهٔ طرف مقابل',
-            mergeResultTitle: 'نتیجهٔ ادغام',
-            mergeCopy: 'کپی نتیجه',
-            mergeDownload: 'دانلود نتیجه',
-            batchTitle: 'مقایسهٔ دسته‌ای فایل‌ها',
-            batchOriginalFiles: 'فایل‌های اصلی',
-            batchModifiedFiles: 'فایل‌های تغییریافته',
-            batchSelectFiles: '...انتخاب فایل‌ها',
-            batchSelectFolder: '...انتخاب پوشه',
-            batchRun: 'اجرای مقایسهٔ دسته‌ای',
-            batchHint: '.فایل‌ها بر اساس نام (یا مسیر نسبی هنگام انتخاب پوشه) تطبیق داده می‌شوند. فایلی که فقط در یک طرف باشد، کامل اضافه‌شده یا حذف‌شده نمایش داده می‌شود',
-            statTotalRuns: 'مقایسه‌های انجام‌شده',
-            statLinesAdded: 'خطوط افزوده‌شده',
-            statLinesRemoved: 'خطوط حذف‌شده',
-            statTopLanguage: 'پراستفاده‌ترین زبان',
-            statAvgSimilarity: 'میانگین شباهت',
-            exportHistory: 'خروجی گرفتن',
-            importHistory: 'بارگذاری',
-            importSuccess: '!بارگذاری شد',
-            importFailed: 'بارگذاری ناموفق بود',
-            historyTitle: 'تاریخچه مقایسه‌ها',
-            clearHistory: 'پاک‌کردن تاریخچه',
-            historyEmpty: '.هنوز مقایسه‌ای انجام نشده. از تب مقایسه شروع کنید',
-            historyRestore: 'بازیابی',
-            historyDelete: 'حذف',
-            settingsTitle: 'تنظیمات',
-            settingsAppearance: 'ظاهر برنامه',
-            settingsAppearanceHint: '.تم و زبان رابط کاربری را از نوار بالا تغییر دهید',
-            settingsSyntaxThemeTitle: 'تم رنگی کد',
-            settingsSyntaxThemeHint: '.تم هایلایت‌کردن سینتکس کد را انتخاب کنید',
-            themeAuto: '(مطابق با تم برنامه) خودکار',
-            settingsResetTitle: 'بازنشانی داده‌های محلی',
-            settingsResetHint: '.تنظیمات ذخیره‌شده و تاریخچه مقایسه‌ها را در این مرورگر پاک می‌کند',
-            settingsResetButton: 'بازنشانی داده‌ها',
-            settingsAboutTitle: 'درباره',
-            settingsAboutHint: '.CodeCompare یک ابزار مقایسه کد اوپن‌سورس و کاملاً سمت کاربر است',
-            resetConfirm: '.این کار تمام تنظیمات ذخیره‌شده و تاریخچه مقایسه‌ها را پاک می‌کند. ادامه می‌دهید؟'
         }
     };
 
     const state = {
         language: 'javascript',
-        uiLang: 'en',
         diffView: 'unified',
         collapseUnchanged: true,
         wrapLines: false,
@@ -343,6 +248,7 @@ document.addEventListener('DOMContentLoaded', () => {
         applyTheme();
         if (syntaxThemeSelect) syntaxThemeSelect.value = state.syntaxTheme;
         applyUiLanguage();
+        applyShortcutLabels();
         syncViewToggleButtons();
         collapseUnchangedToggle.checked = state.collapseUnchanged;
         wrapLinesToggle.checked = state.wrapLines;
@@ -354,6 +260,11 @@ document.addEventListener('DOMContentLoaded', () => {
         renderIgnorePresetOptions();
         registerServiceWorker();
         loadSharedComparisonFromUrl();
+    }
+
+    function applyShortcutLabels() {
+        if (shortcutHintEl) shortcutHintEl.textContent = `Tip: press ${MOD_KEY}+Enter to compare`;
+        if (compareBtn) compareBtn.title = `Shortcut: ${MOD_KEY}+Enter`;
     }
 
     function loadSettings() {
@@ -368,7 +279,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     Object.assign(state.plugins, saved.plugins);
                 }
                 if (typeof saved.language === 'string') state.language = saved.language;
-                if (typeof saved.uiLang === 'string') state.uiLang = saved.uiLang;
                 if (saved.diffView === 'unified' || saved.diffView === 'split') state.diffView = saved.diffView;
                 if (typeof saved.collapseUnchanged === 'boolean') state.collapseUnchanged = saved.collapseUnchanged;
                 if (typeof saved.wrapLines === 'boolean') state.wrapLines = saved.wrapLines;
@@ -391,7 +301,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 syntaxTheme: state.syntaxTheme,
                 plugins: state.plugins,
                 language: state.language,
-                uiLang: state.uiLang,
                 diffView: state.diffView,
                 collapseUnchanged: state.collapseUnchanged,
                 wrapLines: state.wrapLines,
@@ -406,8 +315,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function t(key, vars) {
-        const dict = translations[state.uiLang] || translations.en;
-        let text = dict[key] !== undefined ? dict[key] : (translations.en[key] || key);
+        let text = translations.en[key] !== undefined ? translations.en[key] : key;
         if (vars) {
             Object.keys(vars).forEach(k => {
                 text = text.replace(`{${k}}`, vars[k]);
@@ -417,8 +325,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function applyUiLanguage() {
-        document.documentElement.lang = state.uiLang;
-        document.documentElement.dir = state.uiLang === 'fa' ? 'rtl' : 'ltr';
         document.title = t('pageTitle');
 
         document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -435,14 +341,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function toggleUiLanguage() {
-        state.uiLang = state.uiLang === 'en' ? 'fa' : 'en';
-        applyUiLanguage();
-        saveSettings();
-    }
-
     function setupEventListeners() {
-        compareBtn.addEventListener('click', runComparison);
+        compareBtn.addEventListener('click', () => runComparison());
         if (swapBtn) swapBtn.addEventListener('click', swapCode);
         if (shortcutsHelpBtn) shortcutsHelpBtn.addEventListener('click', showShortcutsHelp);
         if (detectLanguageBtn) {
@@ -466,7 +366,7 @@ document.addEventListener('DOMContentLoaded', () => {
             clearTimeout(liveDiffTimer);
             liveDiffTimer = setTimeout(() => {
                 if (originalCodeEl.value !== '' || modifiedCodeEl.value !== '') {
-                    runComparison();
+                    runComparison({ live: true });
                 }
             }, 500);
         };
@@ -484,7 +384,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.detectMoved = detectMovedToggle.checked;
                 saveSettings();
                 if (diffOutputContainer.style.display !== 'none') {
-                    runComparison();
+                    runComparison({ record: false });
                 }
             });
         }
@@ -505,10 +405,33 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (e.altKey && e.key === 'ArrowUp') {
                 e.preventDefault();
                 jumpToChange(-1);
-            } else if (e.key === 'Escape' && shortcutsModal && !shortcutsModal.hidden) {
-                hideShortcutsHelp();
+            } else if (e.key === 'Escape') {
+                if (shortcutsModal && !shortcutsModal.hidden) {
+                    hideShortcutsHelp();
+                } else if (advancedSettingsEl && advancedSettingsEl.open) {
+                    advancedSettingsEl.open = false;
+                }
             }
         });
+
+        document.addEventListener('click', e => {
+            if (advancedSettingsEl && advancedSettingsEl.open && !advancedSettingsEl.contains(e.target)) {
+                advancedSettingsEl.open = false;
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            if (diffOutputContainer.style.display !== 'none') sizeMinimap();
+        });
+
+        const scrollTimers = new WeakMap();
+        document.addEventListener('scroll', e => {
+            const el = e.target === document ? document.documentElement : e.target;
+            if (!el || !el.classList) return;
+            el.classList.add('is-scrolling');
+            clearTimeout(scrollTimers.get(el));
+            scrollTimers.set(el, setTimeout(() => el.classList.remove('is-scrolling'), 900));
+        }, true);
 
         if (shortcutsModalClose) shortcutsModalClose.addEventListener('click', hideShortcutsHelp);
         if (encodingNormalizeBtn) encodingNormalizeBtn.addEventListener('click', normalizeInputsAndRecompare);
@@ -551,14 +474,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 saveSettings();
             });
         }
-        themeSwitcher.addEventListener('keydown', e => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                toggleTheme();
-            }
-        });
-
-        langToggleBtn.addEventListener('click', toggleUiLanguage);
 
         langSearchInput.addEventListener('input', filterLanguages);
         langSearchInput.addEventListener('focus', () => {
@@ -578,7 +493,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.plugins[plugin] = toggle.checked;
                 saveSettings();
                 if (diffOutputContainer.style.display !== 'none') {
-                    runComparison();
+                    runComparison({ record: false });
                 }
             });
         });
@@ -606,6 +521,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         collapseUnchangedToggle.addEventListener('change', () => {
             state.collapseUnchanged = collapseUnchangedToggle.checked;
+            expandedUnifiedFolds = new Set();
+            expandedSplitFolds = new Set();
             saveSettings();
             renderDiffOutput();
         });
@@ -621,7 +538,7 @@ document.addEventListener('DOMContentLoaded', () => {
             state.ignoreRulesMode = ignoreRulesMode.value;
             saveSettings();
             if (diffOutputContainer.style.display !== 'none') {
-                runComparison();
+                runComparison({ record: false });
             }
         };
         ignorePatternsInput.addEventListener('change', onIgnoreRulesChange);
@@ -656,8 +573,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!codeEl) return;
                 const text = codeEl.textContent;
                 const flash = ok => {
-                    copyBtn.textContent = ok ? '\u2713' : '\u2717';
-                    setTimeout(() => { copyBtn.textContent = '\u2327'; }, 900);
+                    copyBtn.innerHTML = icon(ok ? 'check' : 'x');
+                    setTimeout(() => { copyBtn.innerHTML = icon('copy'); }, 900);
                 };
                 if (navigator.clipboard && navigator.clipboard.writeText) {
                     navigator.clipboard.writeText(text).then(() => flash(true)).catch(() => flash(false));
@@ -701,6 +618,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function showInputView() {
         diffOutputContainer.style.display = 'none';
         comparisonContainer.style.display = '';
+        document.getElementById('view-compare').classList.remove('diff-open');
     }
 
     const uploadedLineEndingStyle = { original: null, modified: null };
@@ -786,7 +704,7 @@ document.addEventListener('DOMContentLoaded', () => {
         showFormatJsonStatus(results, succeeded, failed);
 
         if (diffOutputContainer.style.display !== 'none') {
-            runComparison();
+            runComparison({ record: false });
         }
     }
 
@@ -826,20 +744,26 @@ document.addEventListener('DOMContentLoaded', () => {
         uploadedBom.modified = tempBom;
         updateLineCounts();
         if (diffOutputContainer.style.display !== 'none') {
-            runComparison();
+            runComparison({ record: false });
         }
     }
 
+    let shortcutsReturnFocusEl = null;
+
     function showShortcutsHelp() {
-        const isFa = state.uiLang === 'fa';
         const rows = [
-            ['Ctrl/⌘ + Enter', isFa ? 'اجرای مقایسه' : 'Run comparison'],
-            ['Alt/⌥ + \u2193', isFa ? 'رفتن به تغییر بعدی' : 'Jump to next change'],
-            ['Alt/⌥ + \u2191', isFa ? 'رفتن به تغییر قبلی' : 'Jump to previous change'],
-            ['Enter', isFa ? '(در کادر جست‌وجو) رفتن به مورد بعدی' : 'Next search match (in search box)'],
-            ['Shift + Enter', isFa ? '(در کادر جست‌وجو) رفتن به مورد قبلی' : 'Previous search match (in search box)'],
-            ['Esc', isFa ? 'بستن این پنجره' : 'Close this dialog']
+            [`${MOD_KEY} + Enter`, 'Run comparison'],
+            [`${ALT_KEY} + \u2193`, 'Jump to next change'],
+            [`${ALT_KEY} + \u2191`, 'Jump to previous change'],
+            ['Enter', 'Next search match (in search box)'],
+            ['Shift + Enter', 'Previous search match (in search box)'],
+            ['Esc', 'Close this dialog']
         ];
+        if (shortcutsPlatformEl) {
+            shortcutsPlatformEl.textContent = IS_MAC
+                ? `Shown for ${PLATFORM.label}: \u2318 is Command, \u2325 is Option.`
+                : `Shown for ${PLATFORM.label}: use the Ctrl and Alt keys.`;
+        }
         shortcutsModalBody.innerHTML = '';
         rows.forEach(([key, desc]) => {
             const row = document.createElement('div');
@@ -852,11 +776,15 @@ document.addEventListener('DOMContentLoaded', () => {
             row.appendChild(span);
             shortcutsModalBody.appendChild(row);
         });
+        shortcutsReturnFocusEl = document.activeElement;
         shortcutsModal.hidden = false;
+        if (shortcutsModalClose) shortcutsModalClose.focus();
     }
 
     function hideShortcutsHelp() {
         shortcutsModal.hidden = true;
+        if (shortcutsReturnFocusEl && shortcutsReturnFocusEl.focus) shortcutsReturnFocusEl.focus();
+        shortcutsReturnFocusEl = null;
     }
 
     function getChangeGroupStarts() {
@@ -948,18 +876,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const container = state.diffView === 'split' ? diffSplitView : diffOutputLinesEl;
         const findEl = index => container.querySelector(`[${attr}="${index}"]`);
 
+        const baseTop = diffOutputContainer.getBoundingClientRect().top;
         let targetIndex;
         if (direction > 0) {
             targetIndex = starts.find(i => {
                 const el = findEl(i);
-                return el && el.getBoundingClientRect().top > 60;
+                return el && el.getBoundingClientRect().top - baseTop > 60;
             });
             if (targetIndex === undefined) targetIndex = starts[starts.length - 1];
         } else {
             const reversed = [...starts].reverse();
             targetIndex = reversed.find(i => {
                 const el = findEl(i);
-                return el && el.getBoundingClientRect().top < -10;
+                return el && el.getBoundingClientRect().top - baseTop < -10;
             });
             if (targetIndex === undefined) targetIndex = starts[0];
         }
@@ -984,19 +913,14 @@ document.addEventListener('DOMContentLoaded', () => {
             encodingWarningEl.hidden = true;
             return;
         }
-        const isFa = state.uiLang === 'fa';
         const parts = [];
         if (lineEndingMismatch) {
-            parts.push(isFa
-                ? `پایان خط متفاوت (${originalStyle.toUpperCase()} در برابر ${modifiedStyle.toUpperCase()})`
-                : `different line endings (${originalStyle.toUpperCase()} vs ${modifiedStyle.toUpperCase()})`);
+            parts.push(`different line endings (${originalStyle.toUpperCase()} vs ${modifiedStyle.toUpperCase()})`);
         }
         if (bomMismatch) {
-            parts.push(isFa ? 'یکی از فایل‌ها BOM دارد و دیگری ندارد' : 'one file has a BOM, the other does not');
+            parts.push('one file has a BOM, the other does not');
         }
-        const message = '\u26a0 ' +
-            (isFa ? 'این می‌تواند باعث نمایش تغییرات نادرست شود: ' : 'This can cause misleading changes: ') +
-            parts.join(isFa ? ' و ' : ' and ');
+        const message = 'This can cause misleading changes: ' + parts.join(' and ');
         encodingWarningTextEl.textContent = message;
         encodingWarningEl.hidden = false;
     }
@@ -1009,32 +933,25 @@ document.addEventListener('DOMContentLoaded', () => {
         uploadedBom.original = null;
         uploadedBom.modified = null;
         updateLineCounts();
-        runComparison();
+        runComparison({ record: false });
     }
 
-    function runComparison() {
+    function runComparison(options) {
+        const live = !!(options && options.live === true);
+        const record = !live && !(options && options.record === false);
         if (originalCodeEl.value === '' && modifiedCodeEl.value === '') return;
 
         unifiedRenderLimit = RENDER_CHUNK_SIZE;
         splitRenderLimit = RENDER_CHUNK_SIZE;
 
         diffOutputContainer.style.display = 'block';
-        comparisonContainer.style.display = 'none';
+        if (!live) comparisonContainer.style.display = 'none';
+        document.getElementById('view-compare').classList.toggle('diff-open', !live);
 
         let originalText = originalCodeEl.value;
         let modifiedText = modifiedCodeEl.value;
 
         showEncodingWarningIfNeeded();
-
-        if (state.plugins['normalize-whitespace']) {
-            const normalizer = Prism.plugins && Prism.plugins.NormalizeWhitespace;
-            if (normalizer) {
-                originalText = normalizer.normalize(originalText, {});
-                modifiedText = normalizer.normalize(modifiedText, {});
-            } else {
-                console.warn('NormalizeWhitespace plugin is not loaded; showing raw text instead.');
-            }
-        }
 
         const originalIgnored = CodeCompareDiff.applyIgnoreRules(originalText, state.ignorePatterns, state.ignoreRulesMode);
         const modifiedIgnored = CodeCompareDiff.applyIgnoreRules(modifiedText, state.ignorePatterns, state.ignoreRulesMode);
@@ -1043,7 +960,8 @@ document.addEventListener('DOMContentLoaded', () => {
         showIgnoreRulesErrors([...originalIgnored.errors, ...modifiedIgnored.errors]);
 
         lastDiffEntries = CodeCompareDiff.computeLineDiff(originalText, modifiedText, {
-            ignoreCase: !!state.plugins['ignore-case']
+            ignoreCase: !!state.plugins['ignore-case'],
+            ignoreWhitespace: !!state.plugins['normalize-whitespace']
         });
         if (state.plugins['ignore-blank-lines']) {
             lastDiffEntries = CodeCompareDiff.applyIgnoreBlankLines(lastDiffEntries);
@@ -1054,7 +972,7 @@ document.addEventListener('DOMContentLoaded', () => {
         expandedUnifiedFolds = new Set();
         expandedSplitFolds = new Set();
         const historyStats = CodeCompareDiff.computeStats(lastDiffEntries);
-        if (window.CodeCompareDashboard) {
+        if (record && window.CodeCompareDashboard) {
             window.CodeCompareDashboard.recordRun({
                 language: state.language,
                 added: historyStats.added,
@@ -1101,8 +1019,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function saveCurrentAsPreset() {
-        const isFa = state.uiLang === 'fa';
-        const name = window.prompt(isFa ? 'نامی برای این پریست وارد کنید:' : 'Name this preset:');
+        const name = window.prompt('Name this preset:');
         if (!name || !name.trim()) return;
         const trimmedName = name.trim();
         const presets = loadIgnorePresets().filter(p => p.name !== trimmedName);
@@ -1171,6 +1088,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         diffMinimapEl.style.display = '';
+        sizeMinimap();
         const total = lastDiffEntries.length;
         if (total === 0) {
             diffMinimapEl.innerHTML = '';
@@ -1198,6 +1116,15 @@ document.addEventListener('DOMContentLoaded', () => {
             el.classList.add('jump-highlight');
             setTimeout(() => el.classList.remove('jump-highlight'), 900);
         }
+    }
+
+    function sizeMinimap() {
+        if (!diffMinimapEl || diffMinimapEl.style.display === 'none') return;
+        const wrapper = diffMinimapEl.parentElement;
+        if (!wrapper) return;
+        const offset = wrapper.getBoundingClientRect().top - diffOutputContainer.getBoundingClientRect().top + diffOutputContainer.scrollTop;
+        const height = diffOutputContainer.clientHeight - offset - 8;
+        diffMinimapEl.style.height = Math.max(140, Math.floor(height)) + 'px';
     }
 
     function handleMinimapClick(clientY) {
@@ -1237,7 +1164,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function foldDividerHtml(className, foldId, count) {
         const label = escapeHtml(t('foldShowLines', { count }));
-        return `<div class="${className}" role="button" tabindex="0" data-fold-id="${foldId}"><span class="fold-icon" aria-hidden="true">\u22ef</span><span>${label}</span></div>`;
+        return `<div class="${className}" role="button" tabindex="0" data-fold-id="${foldId}"><span class="fold-icon" aria-hidden="true">${icon('ellipsis')}</span><span>${label}</span></div>`;
     }
 
     function loadMoreNoticeHtml(view, remaining) {
@@ -1261,14 +1188,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const entryIndex = lineNo - 1;
             const prefix = entry.type === 'added' ? '+' : entry.type === 'removed' ? '-' : '\u00a0';
             const movedClass = entry.moved ? ' moved' : '';
-            const movedBadge = entry.moved ? '<span class="moved-badge" title="Moved code">\u21c4</span>' : '';
+            const movedBadge = entry.moved ? `<span class="moved-badge" title="Moved code">${icon('compare')}</span>` : '';
             html.push(
                 `<div class="unified-line type-${entry.type}${movedClass}" data-entry-index="${entryIndex}">` +
                 `<span class="unified-line-num">${lineNo}</span>` +
                 `<span class="unified-line-prefix">${prefix}</span>` +
                 `${movedBadge}` +
                 `<code class="unified-line-code">${highlightLine(entry.line)}</code>` +
-                `<button type="button" class="copy-line-btn" tabindex="-1" aria-label="Copy line">\u2327</button>` +
+                `<button type="button" class="copy-line-btn" tabindex="-1" aria-label="Copy line">${icon('copy')}</button>` +
                 `</div>`
             );
         }
@@ -1340,17 +1267,17 @@ document.addEventListener('DOMContentLoaded', () => {
             leftHtml.push(
                 `<div class="split-line type-${row.left.type}${row.left.moved ? ' moved' : ''}" data-row-index="${currentRowIndex}">` +
                 `<span class="split-line-num">${row.left.type !== 'empty' ? leftLineNo : ''}</span>` +
-                `${row.left.moved ? '<span class="moved-badge" title="Moved code">\u21c4</span>' : ''}` +
+                `${row.left.moved ? `<span class="moved-badge" title="Moved code">${icon('compare')}</span>` : ''}` +
                 `<code class="split-line-code">${leftCode}</code>` +
-                `${row.left.type !== 'empty' ? '<button type="button" class="copy-line-btn" tabindex="-1" aria-label="Copy line">\u2327</button>' : ''}` +
+                `${row.left.type !== 'empty' ? `<button type="button" class="copy-line-btn" tabindex="-1" aria-label="Copy line">${icon('copy')}</button>` : ''}` +
                 `</div>`
             );
             rightHtml.push(
                 `<div class="split-line type-${row.right.type}${row.right.moved ? ' moved' : ''}" data-row-index="${currentRowIndex}">` +
                 `<span class="split-line-num">${row.right.type !== 'empty' ? rightLineNo : ''}</span>` +
-                `${row.right.moved ? '<span class="moved-badge" title="Moved code">\u21c4</span>' : ''}` +
+                `${row.right.moved ? `<span class="moved-badge" title="Moved code">${icon('compare')}</span>` : ''}` +
                 `<code class="split-line-code">${rightCode}</code>` +
-                `${row.right.type !== 'empty' ? '<button type="button" class="copy-line-btn" tabindex="-1" aria-label="Copy line">\u2327</button>' : ''}` +
+                `${row.right.type !== 'empty' ? `<button type="button" class="copy-line-btn" tabindex="-1" aria-label="Copy line">${icon('copy')}</button>` : ''}` +
                 `</div>`
             );
         }
@@ -1585,7 +1512,7 @@ document.addEventListener('DOMContentLoaded', () => {
             populateLanguages();
             syncViewToggleButtons();
             updateLineCounts();
-            ensureLanguageLoaded(state.language, runComparison);
+            ensureLanguageLoaded(state.language, () => runComparison());
         } catch (err) {
             console.error('Failed to load shared comparison:', err);
             alert(t('shareLoadFailed'));

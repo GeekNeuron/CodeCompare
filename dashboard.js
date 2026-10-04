@@ -47,10 +47,6 @@
         }
     }
 
-    function isFa() {
-        return document.documentElement.lang === 'fa';
-    }
-
     function renderStats(list) {
         var totalAdded = 0;
         var totalRemoved = 0;
@@ -152,7 +148,7 @@
             var restoreBtn = document.createElement('button');
             restoreBtn.type = 'button';
             restoreBtn.className = 'compare-button secondary-button';
-            restoreBtn.textContent = isFa() ? 'بازیابی' : 'Restore';
+            restoreBtn.textContent = 'Restore';
             restoreBtn.addEventListener('click', function () {
                 restoreEntry(entry);
             });
@@ -160,7 +156,7 @@
             var deleteBtn = document.createElement('button');
             deleteBtn.type = 'button';
             deleteBtn.className = 'compare-button secondary-button';
-            deleteBtn.textContent = isFa() ? 'حذف' : 'Delete';
+            deleteBtn.textContent = 'Delete';
             deleteBtn.addEventListener('click', function () {
                 deleteEntry(entry.id);
             });
@@ -176,6 +172,12 @@
 
     function recordRun(entry) {
         var list = loadHistory();
+        var last = list[list.length - 1];
+        if (last && last.language === entry.language &&
+            last.originalSnippet === entry.originalSnippet &&
+            last.modifiedSnippet === entry.modifiedSnippet) {
+            list.pop();
+        }
         list.push({
             id: Date.now() + '-' + Math.random().toString(36).slice(2, 8),
             timestamp: Date.now(),
@@ -297,9 +299,9 @@
                     }
                     saveHistory(merged);
                     renderHistory();
-                    flashLabel(importHistoryBtn, isFa() ? '!بارگذاری شد' : 'Imported!');
+                    flashLabel(importHistoryBtn, 'Imported!');
                 } catch {
-                    flashLabel(importHistoryBtn, isFa() ? 'بارگذاری ناموفق بود' : 'Import failed');
+                    flashLabel(importHistoryBtn, 'Import failed');
                 }
                 importHistoryInput.value = '';
             };
@@ -309,9 +311,7 @@
 
     if (resetDataBtn) {
         resetDataBtn.addEventListener('click', function () {
-            var confirmMsg = isFa()
-                ? 'این کار تمام تنظیمات ذخیره‌شده و تاریخچه مقایسه‌ها را پاک می‌کند. ادامه می‌دهید؟'
-                : 'This will clear all saved settings and comparison history. Continue?';
+            var confirmMsg = 'This will clear all saved settings and comparison history. Continue?';
             if (window.confirm(confirmMsg)) {
                 localStorage.clear();
                 location.reload();
@@ -411,8 +411,8 @@
         var table = document.createElement('table');
         table.className = 'batch-table';
         var thead = document.createElement('thead');
-        thead.innerHTML = '<tr><th>' + (isFa() ? 'فایل' : 'File') + '</th><th>+</th><th>-</th><th>' +
-            (isFa() ? 'شباهت' : 'Similarity') + '</th><th></th></tr>';
+        thead.innerHTML = '<tr><th>' + ('File') + '</th><th>+</th><th>-</th><th>' +
+            ('Similarity') + '</th><th></th></tr>';
         table.appendChild(thead);
         var tbody = document.createElement('tbody');
         results.forEach(function (r) {
@@ -423,10 +423,10 @@
             nameTd.textContent = r.name;
 
             var addedTd = document.createElement('td');
-            addedTd.textContent = r.status === 'added' ? (isFa() ? 'فایل جدید' : 'new file') : String(r.added);
+            addedTd.textContent = r.status === 'added' ? ('new file') : String(r.added);
 
             var removedTd = document.createElement('td');
-            removedTd.textContent = r.status === 'removed' ? (isFa() ? 'فایل حذف‌شده' : 'deleted file') : String(r.removed);
+            removedTd.textContent = r.status === 'removed' ? ('deleted file') : String(r.removed);
 
             var simTd = document.createElement('td');
             simTd.textContent = (r.status === 'changed' || r.status === 'identical') ? r.similarity + '%' : '\u2013';
@@ -436,7 +436,7 @@
                 var openBtn = document.createElement('button');
                 openBtn.type = 'button';
                 openBtn.className = 'compare-button secondary-button';
-                openBtn.textContent = isFa() ? 'باز کردن' : 'Open';
+                openBtn.textContent = 'Open';
                 openBtn.addEventListener('click', function () {
                     openInCompareView(r.originalText, r.modifiedText);
                 });
@@ -476,7 +476,7 @@
         });
         allNames.sort();
 
-        batchResultsEl.innerHTML = '<p class="batch-loading">' + (isFa() ? 'در حال پردازش\u2026' : 'Processing\u2026') + '</p>';
+        batchResultsEl.innerHTML = '<p class="batch-loading">' + 'Processing\u2026' + '</p>';
 
         Promise.all(allNames.map(function (name) {
             var origFile = originalMap[name];
@@ -529,8 +529,8 @@
         var base = mergeBaseInput.value;
         var mine = mergeMineInput.value;
         var theirs = mergeTheirsInput.value;
-        var mineLabel = isFa() ? 'من' : 'Mine';
-        var theirsLabel = isFa() ? 'طرف مقابل' : 'Theirs';
+        var mineLabel = 'Mine';
+        var theirsLabel = 'Theirs';
         var result = window.CodeCompareDiff.mergeThreeWay(base, mine, theirs, {
             mineLabel: mineLabel,
             theirsLabel: theirsLabel
@@ -538,12 +538,11 @@
         mergeResultOutput.value = result.mergedText;
         mergeResultSection.hidden = false;
         if (result.conflictCount > 0) {
-            mergeConflictBadge.textContent = isFa()
-                ? result.conflictCount + ' تعارض یافت شد'
-                : result.conflictCount + (result.conflictCount === 1 ? ' conflict found' : ' conflicts found');
+            mergeConflictBadge.textContent = result.conflictCount +
+                (result.conflictCount === 1 ? ' conflict found' : ' conflicts found');
             mergeConflictBadge.className = 'merge-conflict-badge has-conflicts';
         } else {
-            mergeConflictBadge.textContent = isFa() ? 'بدون تعارض' : 'No conflicts';
+            mergeConflictBadge.textContent = 'No conflicts';
             mergeConflictBadge.className = 'merge-conflict-badge';
         }
     }
@@ -554,8 +553,8 @@
     if (mergeCopyBtn) {
         mergeCopyBtn.addEventListener('click', function () {
             var text = mergeResultOutput.value;
-            var flashOk = function () { flashLabel(mergeCopyBtn, isFa() ? '!کپی شد' : 'Copied!'); };
-            var flashFail = function () { flashLabel(mergeCopyBtn, isFa() ? 'ناموفق' : 'Failed'); };
+            var flashOk = function () { flashLabel(mergeCopyBtn, 'Copied!'); };
+            var flashFail = function () { flashLabel(mergeCopyBtn, 'Failed'); };
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(text).then(flashOk).catch(flashFail);
             } else {
