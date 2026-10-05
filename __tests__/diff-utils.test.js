@@ -1,4 +1,4 @@
-const { computeLineDiff, formatDiffText, computeStats, buildSideBySideRows, computeWordDiff, foldRuns, applyIgnoreRules, applyIgnoreBlankLines, detectMovedBlocks, buildUnifiedPatch, detectEncodingIssues, normalizeLineEndingsAndBom, mergeThreeWay } = require('../diff-utils.js');
+const { computeLineDiff, formatDiffText, computeStats, buildSideBySideRows, computeWordDiff, foldRuns, applyIgnoreRules, applyIgnoreBlankLines, detectMovedBlocks, buildUnifiedPatch, detectEncodingIssues, normalizeLineEndingsAndBom, mergeThreeWay, pairReplacements, findConflicts, resolveConflict, resolveAllConflicts } = require('../diff-utils.js');
 
 describe('computeLineDiff', () => {
     test('identical texts produce only unchanged lines', () => {
@@ -733,5 +733,66 @@ describe('computeLineDiff with ignoreWhitespace', () => {
     test('without the option, whitespace differences count', () => {
         const diff = computeLineDiff('a  b', 'a b');
         expect(diff.some(d => d.type !== 'unchanged')).toBe(true);
+    });
+});
+
+
+describe('pairReplacements', () => {
+    test('pairs k-th removed with k-th added in a change block', () => {
+        const entries = [
+            { type: 'unchanged', line: 'a' },
+            { type: 'removed', line: 'b' }, { type: 'removed', line: 'c' },
+            { type: 'added', line: 'B' }, { type: 'added', line: 'C' }, { type: 'added', line: 'D' },
+            { type: 'unchanged', line: 'e' }
+        ];
+        const map = pairReplacements(entries);
+        expect(map.get(1)).toBe(3);
+        expect(map.get(3)).toBe(1);
+        expect(map.get(2)).toBe(4);
+        expect(map.has(5)).toBe(false);
+        expect(map.has(0)).toBe(false);
+    });
+
+    test('pure additions or removals have no partner', () => {
+        expect(pairReplacements([{ type: 'added', line: 'x' }]).size).toBe(0);
+        expect(pairReplacements([{ type: 'removed', line: 'x' }, { type: 'unchanged', line: 'y' }]).size).toBe(0);
+    });
+});
+
+describe('conflict resolution', () => {
+    const merged = ['a', '<<<<<<< Mine', 'X', '=======', 'Y', '>>>>>>> Theirs', 'b', '<<<<<<< Mine', 'P', 'Q', '=======', 'R', '>>>>>>> Theirs', 'c'].join('\n');
+
+    test('findConflicts locates every block with both sides', () => {
+        const found = findConflicts(merged);
+        expect(found).toHaveLength(2);
+        expect(found[0].mine).toEqual(['X']);
+        expect(found[0].theirs).toEqual(['Y']);
+        expect(found[1].mine).toEqual(['P', 'Q']);
+        expect(found[1].theirs).toEqual(['R']);
+    });
+
+    test('resolve mine / theirs / both for a single conflict', () => {
+        expect(resolveConflict(merged, 0, 'mine').split('\n').slice(0, 3)).toEqual(['a', 'X', 'b']);
+        expect(resolveConflict(merged, 0, 'theirs').split('\n').slice(0, 3)).toEqual(['a', 'Y', 'b']);
+        expect(resolveConflict(merged, 0, 'both').split('\n').slice(0, 4)).toEqual(['a', 'X', 'Y', 'b']);
+        expect(findConflicts(resolveConflict(merged, 0, 'mine'))).toHaveLength(1);
+    });
+
+    test('resolveAllConflicts leaves no markers', () => {
+        const out = resolveAllConflicts(merged, 'theirs');
+        expect(findConflicts(out)).toHaveLength(0);
+        expect(out).toBe('a\nY\nb\nR\nc');
+    });
+
+    test('malformed or lone markers are ignored', () => {
+        expect(findConflicts('<<<<<<< Mine\nonly start')).toHaveLength(0);
+        expect(findConflicts('=======\nplain')).toHaveLength(0);
+        expect(resolveConflict('plain', 0, 'mine')).toBe('plain');
+    });
+
+    test('works on real mergeThreeWay output', () => {
+        const r = mergeThreeWay('a\nb\nc', 'a\nX\nc', 'a\nY\nc');
+        expect(findConflicts(r.mergedText)).toHaveLength(r.conflictCount);
+        expect(resolveAllConflicts(r.mergedText, 'mine')).toBe('a\nX\nc');
     });
 });

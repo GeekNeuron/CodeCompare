@@ -28,11 +28,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const syntaxThemeSelect = document.getElementById('syntax-theme-select');
     const langSearchInput = document.getElementById('language-search');
     const langOptionsContainer = document.getElementById('language-options');
-    const pluginToggles = document.querySelectorAll('.plugins-group input, .process-section input');
+    const pluginToggles = document.querySelectorAll('input[data-plugin]');
     const newComparisonBtn = document.getElementById('new-comparison-btn');
     const comparisonContainer = document.getElementById('comparison-container');
     const advancedSettingsEl = document.querySelector('.advanced-settings');
     const shortcutHintEl = document.getElementById('shortcut-hint');
+    const changeNavEl = document.getElementById('change-nav');
+    const changeNavCountEl = document.getElementById('change-nav-count');
+    const changePrevBtn = document.getElementById('change-prev-btn');
+    const changeNextBtn = document.getElementById('change-next-btn');
     const shortcutsPlatformEl = document.getElementById('shortcuts-platform');
     const uploadOriginalBtn = document.getElementById('upload-original-btn');
     const uploadModifiedBtn = document.getElementById('upload-modified-btn');
@@ -231,7 +235,9 @@ document.addEventListener('DOMContentLoaded', () => {
             'command-line': false,
             'normalize-whitespace': false,
             'ignore-blank-lines': false,
-            'ignore-case': false
+            'ignore-case': false,
+            'word-diff': true,
+            'autosave-draft': true
         }
     };
 
@@ -355,6 +361,8 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
         formatJsonBtn.addEventListener('click', formatBothAsJson);
+        originalCodeEl.addEventListener('input', scheduleDraftSave);
+        modifiedCodeEl.addEventListener('input', scheduleDraftSave);
         originalCodeEl.addEventListener('input', updateLineCounts);
         modifiedCodeEl.addEventListener('input', updateLineCounts);
         originalCodeEl.addEventListener('input', () => { uploadedLineEndingStyle.original = null; uploadedBom.original = null; });
@@ -492,6 +500,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const plugin = toggle.dataset.plugin;
                 state.plugins[plugin] = toggle.checked;
                 saveSettings();
+                if (plugin === 'autosave-draft') {
+                    if (toggle.checked) {
+                        saveDraft();
+                        if (window.CodeCompareDashboard && window.CodeCompareDashboard.saveMergeDraft) window.CodeCompareDashboard.saveMergeDraft();
+                    } else {
+                        try { localStorage.removeItem(DRAFT_KEY); localStorage.removeItem('codecompare-merge-draft-v1'); } catch (err) { console.warn('Could not clear drafts:', err); }
+                    }
+                }
                 if (diffOutputContainer.style.display !== 'none') {
                     runComparison({ record: false });
                 }
@@ -499,6 +515,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         newComparisonBtn.addEventListener('click', showInputView);
+        if (changePrevBtn) changePrevBtn.addEventListener('click', () => jumpToChange(-1));
+        if (changeNextBtn) changeNextBtn.addEventListener('click', () => jumpToChange(1));
 
         uploadOriginalBtn.addEventListener('click', () => uploadOriginalInput.click());
         uploadModifiedBtn.addEventListener('click', () => uploadModifiedInput.click());
@@ -867,6 +885,26 @@ document.addEventListener('DOMContentLoaded', () => {
         highlightCurrentSearchMatch();
     }
 
+    function updateChangeNav(position, total) {
+        if (!changeNavEl) return;
+        changeNavEl.hidden = total === 0;
+        if (changeNavCountEl) {
+            changeNavCountEl.textContent = position >= 0
+                ? `${position + 1} / ${total}`
+                : `${total} ${total === 1 ? 'change' : 'changes'}`;
+        }
+    }
+
+    // On desktop the diff panel scrolls itself; on small screens the whole page area scrolls instead.
+    function getDiffScroller() {
+        const overflowY = window.getComputedStyle(diffOutputContainer).overflowY;
+        if (overflowY === 'auto' || overflowY === 'scroll') return diffOutputContainer;
+        return diffOutputContainer.closest('.app-content') || diffOutputContainer;
+    }
+
+    let lastJumpPosition = -1;
+    let lastJumpTime = 0;
+
     function jumpToChange(direction) {
         if (diffOutputContainer.style.display === 'none') return;
         const starts = getChangeGroupStarts();
@@ -876,23 +914,44 @@ document.addEventListener('DOMContentLoaded', () => {
         const container = state.diffView === 'split' ? diffSplitView : diffOutputLinesEl;
         const findEl = index => container.querySelector(`[${attr}="${index}"]`);
 
-        const baseTop = diffOutputContainer.getBoundingClientRect().top;
+        const scroller = getDiffScroller();
+        const containerRect = scroller.getBoundingClientRect();
+        const viewTop = containerRect.top;
+        const viewBottom = containerRect.top + (scroller.clientHeight || 0);
+        const now = Date.now();
+
+        // Is the change we jumped to last still on screen (or is a smooth scroll to it still running)?
+        let activeInView = false;
+        if (lastJumpPosition >= 0 && lastJumpPosition < starts.length) {
+            const activeEl = findEl(starts[lastJumpPosition]);
+            if (activeEl) {
+                const r = activeEl.getBoundingClientRect();
+                activeInView = r.top >= viewTop && r.bottom <= viewBottom;
+            }
+        }
+
         let targetIndex;
-        if (direction > 0) {
+        if (lastJumpPosition >= 0 && lastJumpPosition < starts.length && (activeInView || now - lastJumpTime < 1200)) {
+            const step = lastJumpPosition + direction;
+            targetIndex = starts[(step + starts.length) % starts.length];
+        } else if (direction > 0) {
             targetIndex = starts.find(i => {
                 const el = findEl(i);
-                return el && el.getBoundingClientRect().top - baseTop > 60;
+                return el && el.getBoundingClientRect().top > viewTop + 40;
             });
-            if (targetIndex === undefined) targetIndex = starts[starts.length - 1];
+            if (targetIndex === undefined) targetIndex = starts[0];
         } else {
             const reversed = [...starts].reverse();
             targetIndex = reversed.find(i => {
                 const el = findEl(i);
-                return el && el.getBoundingClientRect().top - baseTop < -10;
+                return el && el.getBoundingClientRect().bottom < viewTop + 10;
             });
-            if (targetIndex === undefined) targetIndex = starts[0];
+            if (targetIndex === undefined) targetIndex = starts[starts.length - 1];
         }
+        lastJumpPosition = starts.indexOf(targetIndex);
+        lastJumpTime = now;
 
+        updateChangeNav(starts.indexOf(targetIndex), starts.length);
         const targetEl = findEl(targetIndex);
         if (targetEl && targetEl.scrollIntoView) {
             targetEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
@@ -959,6 +1018,7 @@ document.addEventListener('DOMContentLoaded', () => {
         modifiedText = modifiedIgnored.text;
         showIgnoreRulesErrors([...originalIgnored.errors, ...modifiedIgnored.errors]);
 
+        lastJumpPosition = -1;
         lastDiffEntries = CodeCompareDiff.computeLineDiff(originalText, modifiedText, {
             ignoreCase: !!state.plugins['ignore-case'],
             ignoreWhitespace: !!state.plugins['normalize-whitespace']
@@ -1079,6 +1139,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         applyDiffSearch();
         renderMinimap();
+        updateChangeNav(-1, getChangeGroupStarts().length);
     }
 
     function renderMinimap() {
@@ -1174,6 +1235,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderUnifiedLines(diffEntries) {
         const html = [];
+        const partners = state.plugins['word-diff'] ? CodeCompareDiff.pairReplacements(diffEntries) : null;
+        const wordDiffCache = new Map();
+
+        function unifiedCodeHtml(entry, entryIndex) {
+            const partnerIndex = partners && !entry.moved ? partners.get(entryIndex) : undefined;
+            if (partnerIndex === undefined || diffEntries[partnerIndex].moved) return highlightLine(entry.line);
+            const removedIndex = entry.type === 'removed' ? entryIndex : partnerIndex;
+            const addedIndex = entry.type === 'removed' ? partnerIndex : entryIndex;
+            let wordDiff = wordDiffCache.get(removedIndex);
+            if (!wordDiff) {
+                wordDiff = CodeCompareDiff.computeWordDiff(diffEntries[removedIndex].line, diffEntries[addedIndex].line);
+                wordDiffCache.set(removedIndex, wordDiff);
+            }
+            return renderWordDiffHtml(wordDiff, entry.type === 'removed' ? 'left' : 'right');
+        }
+
         let lineNo = 0;
         let attempted = 0;
         let truncated = false;
@@ -1194,7 +1271,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 `<span class="unified-line-num">${lineNo}</span>` +
                 `<span class="unified-line-prefix">${prefix}</span>` +
                 `${movedBadge}` +
-                `<code class="unified-line-code">${highlightLine(entry.line)}</code>` +
+                `<code class="unified-line-code">${unifiedCodeHtml(entry, entryIndex)}</code>` +
                 `<button type="button" class="copy-line-btn" tabindex="-1" aria-label="Copy line">${icon('copy')}</button>` +
                 `</div>`
             );
@@ -1252,7 +1329,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (row.left.type !== 'empty') leftLineNo++;
             if (row.right.type !== 'empty') rightLineNo++;
 
-            const isReplacement = row.left.type === 'removed' && row.right.type === 'added';
+            const isReplacement = state.plugins['word-diff'] && row.left.type === 'removed' && row.right.type === 'added';
             let leftCode;
             let rightCode;
             if (isReplacement) {
@@ -1641,7 +1718,46 @@ document.addEventListener('DOMContentLoaded', () => {
         modifiedLinesEl.textContent = `${t('linesLabel')}: ${modifiedCodeEl.value.split('\n').length}`;
     }
 
+    const DRAFT_KEY = 'codecompare-draft-v1';
+    const MAX_DRAFT_CHARS = 1500000;
+    let draftTimer = null;
+
+    function saveDraft() {
+        if (!state.plugins['autosave-draft']) return;
+        try {
+            const original = originalCodeEl.value;
+            const modified = modifiedCodeEl.value;
+            if (original.length + modified.length > MAX_DRAFT_CHARS) return;
+            localStorage.setItem(DRAFT_KEY, JSON.stringify({ original, modified }));
+        } catch (err) {
+            console.warn('Could not save draft:', err);
+        }
+    }
+
+    function scheduleDraftSave() {
+        if (!state.plugins['autosave-draft']) return;
+        clearTimeout(draftTimer);
+        draftTimer = setTimeout(saveDraft, 500);
+    }
+
+    function restoreDraft() {
+        if (!state.plugins['autosave-draft']) return false;
+        if (location.hash.startsWith('#share=')) return false;
+        try {
+            const draft = JSON.parse(localStorage.getItem(DRAFT_KEY));
+            if (draft && typeof draft.original === 'string' && typeof draft.modified === 'string') {
+                originalCodeEl.value = draft.original;
+                modifiedCodeEl.value = draft.modified;
+                return true;
+            }
+        } catch (err) {
+            console.warn('Could not restore draft:', err);
+        }
+        return false;
+    }
+
     function loadInitialCode() {
+        if (restoreDraft()) return;
         originalCodeEl.value = `body {\n  font-family: 'Arial';\n  color: #333;\n}`;
         modifiedCodeEl.value = `body {\n  font-family: 'Helvetica', sans-serif;\n  color: #444;\n  background-color: #f0f0f0;\n}`;
     }

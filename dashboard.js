@@ -405,7 +405,86 @@
         if (runBtn) runBtn.click();
     }
 
+    var batchToolbarEl = document.getElementById('batch-toolbar');
+    var batchSummaryEl = document.getElementById('batch-summary');
+    var batchExportCsvBtn = document.getElementById('batch-export-csv-btn');
+    var batchExportJsonBtn = document.getElementById('batch-export-json-btn');
+    var lastBatchResults = [];
+
+    function summarizeBatch(results) {
+        var summary = { total: results.length, changed: 0, identical: 0, added: 0, removed: 0, linesAdded: 0, linesRemoved: 0 };
+        results.forEach(function (r) {
+            summary[r.status] += 1;
+            summary.linesAdded += r.added;
+            summary.linesRemoved += r.removed;
+        });
+        return summary;
+    }
+
+    function downloadText(filename, text, mime) {
+        var blob = new Blob([text], { type: mime });
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
+    function csvCell(value) {
+        var text = String(value);
+        if (/^[=+\-@\t\r]/.test(text)) text = "'" + text;
+        return '"' + text.replace(/"/g, '""') + '"';
+    }
+
+    function exportBatchCsv() {
+        if (lastBatchResults.length === 0) return;
+        var rows = [['File', 'Status', 'Lines added', 'Lines removed', 'Similarity %']];
+        lastBatchResults.forEach(function (r) {
+            var similar = (r.status === 'changed' || r.status === 'identical') ? r.similarity : '';
+            rows.push([r.name, r.status, r.added, r.removed, similar]);
+        });
+        var text = rows.map(function (row) { return row.map(csvCell).join(','); }).join('\r\n');
+        downloadText('batch-report.csv', '\ufeff' + text, 'text/csv;charset=utf-8');
+    }
+
+    function exportBatchJson() {
+        if (lastBatchResults.length === 0) return;
+        var report = {
+            summary: summarizeBatch(lastBatchResults),
+            files: lastBatchResults.map(function (r) {
+                return {
+                    file: r.name,
+                    status: r.status,
+                    linesAdded: r.added,
+                    linesRemoved: r.removed,
+                    similarity: (r.status === 'changed' || r.status === 'identical') ? r.similarity : null
+                };
+            })
+        };
+        downloadText('batch-report.json', JSON.stringify(report, null, 2), 'application/json');
+    }
+
+    function renderBatchSummary(results) {
+        if (!batchToolbarEl || !batchSummaryEl) return;
+        batchToolbarEl.hidden = results.length === 0;
+        if (results.length === 0) return;
+        var sum = summarizeBatch(results);
+        var parts = [sum.total + (sum.total === 1 ? ' file' : ' files')];
+        ['changed', 'identical', 'added', 'removed'].forEach(function (key) {
+            if (sum[key] > 0) parts.push(sum[key] + ' ' + key);
+        });
+        batchSummaryEl.textContent = parts.join(' \u00b7 ') + ' \u00b7 +' + sum.linesAdded + ' / \u2212' + sum.linesRemoved + ' lines';
+    }
+
+    if (batchExportCsvBtn) batchExportCsvBtn.addEventListener('click', exportBatchCsv);
+    if (batchExportJsonBtn) batchExportJsonBtn.addEventListener('click', exportBatchJson);
+
     function renderBatchResults(results) {
+        lastBatchResults = results;
+        renderBatchSummary(results);
         batchResultsEl.innerHTML = '';
         if (results.length === 0) return;
         var table = document.createElement('table');
@@ -476,6 +555,8 @@
         });
         allNames.sort();
 
+        lastBatchResults = [];
+        if (batchToolbarEl) batchToolbarEl.hidden = true;
         batchResultsEl.innerHTML = '<p class="batch-loading">' + 'Processing\u2026' + '</p>';
 
         Promise.all(allNames.map(function (name) {
@@ -537,15 +618,151 @@
         });
         mergeResultOutput.value = result.mergedText;
         mergeResultSection.hidden = false;
-        if (result.conflictCount > 0) {
-            mergeConflictBadge.textContent = result.conflictCount +
-                (result.conflictCount === 1 ? ' conflict found' : ' conflicts found');
+        mergeHadConflicts = result.conflictCount > 0;
+        renderMergeConflicts();
+    }
+
+    var mergeHadConflicts = false;
+    var mergeConflictsEl = document.getElementById('merge-conflicts');
+    var mergeConflictListEl = document.getElementById('merge-conflict-list');
+    var mergeConflictsSummaryEl = document.getElementById('merge-conflicts-summary');
+    var mergeAllMineBtn = document.getElementById('merge-all-mine-btn');
+    var mergeAllTheirsBtn = document.getElementById('merge-all-theirs-btn');
+
+    function makeConflictSide(title, lines, extraClass) {
+        var box = document.createElement('div');
+        box.className = 'merge-conflict-side ' + extraClass;
+        var label = document.createElement('span');
+        label.className = 'merge-conflict-side-title';
+        label.textContent = title;
+        var pre = document.createElement('pre');
+        pre.className = 'merge-conflict-code';
+        pre.textContent = lines.length ? lines.join('\n') : '(empty)';
+        box.appendChild(label);
+        box.appendChild(pre);
+        return box;
+    }
+
+    function makeConflictButton(text, onClick) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'compare-button secondary-button';
+        btn.textContent = text;
+        btn.addEventListener('click', onClick);
+        return btn;
+    }
+
+    function resolveMergeConflict(index, choice) {
+        mergeResultOutput.value = window.CodeCompareDiff.resolveConflict(mergeResultOutput.value, index, choice);
+        renderMergeConflicts();
+    }
+
+    function renderMergeConflicts() {
+        if (!window.CodeCompareDiff || !mergeConflictsEl) return;
+        var conflicts = window.CodeCompareDiff.findConflicts(mergeResultOutput.value);
+        mergeConflictListEl.innerHTML = '';
+        mergeConflictsEl.hidden = conflicts.length === 0;
+
+        if (conflicts.length > 0) {
+            mergeConflictBadge.textContent = conflicts.length +
+                (conflicts.length === 1 ? ' conflict remaining' : ' conflicts remaining');
             mergeConflictBadge.className = 'merge-conflict-badge has-conflicts';
+            mergeConflictsSummaryEl.textContent = 'Pick which side to keep for each conflict.';
         } else {
-            mergeConflictBadge.textContent = 'No conflicts';
+            mergeConflictBadge.textContent = mergeHadConflicts ? 'All conflicts resolved' : 'No conflicts';
             mergeConflictBadge.className = 'merge-conflict-badge';
         }
+
+        conflicts.forEach(function (conflict, index) {
+            var card = document.createElement('div');
+            card.className = 'merge-conflict-card';
+
+            var title = document.createElement('div');
+            title.className = 'merge-conflict-title';
+            title.textContent = 'Conflict ' + (index + 1) + ' of ' + conflicts.length;
+
+            var sides = document.createElement('div');
+            sides.className = 'merge-conflict-sides';
+            sides.appendChild(makeConflictSide('Mine', conflict.mine, 'is-mine'));
+            sides.appendChild(makeConflictSide('Theirs', conflict.theirs, 'is-theirs'));
+
+            var actions = document.createElement('div');
+            actions.className = 'merge-conflict-actions';
+            actions.appendChild(makeConflictButton('Accept Mine', function () { resolveMergeConflict(index, 'mine'); }));
+            actions.appendChild(makeConflictButton('Accept Theirs', function () { resolveMergeConflict(index, 'theirs'); }));
+            actions.appendChild(makeConflictButton('Accept Both', function () { resolveMergeConflict(index, 'both'); }));
+
+            card.appendChild(title);
+            card.appendChild(sides);
+            card.appendChild(actions);
+            mergeConflictListEl.appendChild(card);
+        });
     }
+
+    if (mergeAllMineBtn) {
+        mergeAllMineBtn.addEventListener('click', function () {
+            mergeResultOutput.value = window.CodeCompareDiff.resolveAllConflicts(mergeResultOutput.value, 'mine');
+            renderMergeConflicts();
+        });
+    }
+    if (mergeAllTheirsBtn) {
+        mergeAllTheirsBtn.addEventListener('click', function () {
+            mergeResultOutput.value = window.CodeCompareDiff.resolveAllConflicts(mergeResultOutput.value, 'theirs');
+            renderMergeConflicts();
+        });
+    }
+    if (mergeResultOutput) {
+        mergeResultOutput.addEventListener('input', renderMergeConflicts);
+    }
+
+    // ---------- merge draft autosave ----------
+    var MERGE_DRAFT_KEY = 'codecompare-merge-draft-v1';
+    var mergeDraftTimer = null;
+
+    function draftsEnabled() {
+        try {
+            var saved = JSON.parse(localStorage.getItem('codecompare-settings'));
+            return !(saved && saved.plugins && saved.plugins['autosave-draft'] === false);
+        } catch {
+            return true;
+        }
+    }
+
+    function saveMergeDraft() {
+        if (!draftsEnabled()) return;
+        try {
+            var draft = { base: mergeBaseInput.value, mine: mergeMineInput.value, theirs: mergeTheirsInput.value };
+            if (draft.base.length + draft.mine.length + draft.theirs.length > 1500000) return;
+            localStorage.setItem(MERGE_DRAFT_KEY, JSON.stringify(draft));
+        } catch (err) {
+            console.warn('Could not save merge draft:', err);
+        }
+    }
+
+    function scheduleMergeDraftSave() {
+        if (!draftsEnabled()) return;
+        window.clearTimeout(mergeDraftTimer);
+        mergeDraftTimer = window.setTimeout(saveMergeDraft, 500);
+    }
+
+    function restoreMergeDraft() {
+        if (!draftsEnabled()) return;
+        try {
+            var draft = JSON.parse(localStorage.getItem(MERGE_DRAFT_KEY));
+            if (draft && typeof draft.base === 'string' && typeof draft.mine === 'string' && typeof draft.theirs === 'string') {
+                mergeBaseInput.value = draft.base;
+                mergeMineInput.value = draft.mine;
+                mergeTheirsInput.value = draft.theirs;
+            }
+        } catch (err) {
+            console.warn('Could not restore merge draft:', err);
+        }
+    }
+
+    [mergeBaseInput, mergeMineInput, mergeTheirsInput].forEach(function (el) {
+        if (el) el.addEventListener('input', scheduleMergeDraftSave);
+    });
+    restoreMergeDraft();
 
     if (mergeRunBtn) {
         mergeRunBtn.addEventListener('click', runThreeWayMerge);
@@ -583,7 +800,8 @@
     }
 
     window.CodeCompareDashboard = {
-        recordRun: recordRun
+        recordRun: recordRun,
+        saveMergeDraft: saveMergeDraft
     };
 
     renderHistory();

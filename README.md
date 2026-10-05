@@ -11,13 +11,13 @@ CodeCompare is a web-based utility to compare two snippets of code or text and v
 ### Comparing
 * **Side-by-side input** — two independent text areas for the original and modified code, with file upload and drag-and-drop on either side.
 * **Swap** — instantly swap the original and modified content.
-* **Line-by-line diff** — additions, deletions, and unchanged lines, with line numbers, in either a Unified or a Side-by-Side (Split) view, with word-level highlighting on modified lines in Split view.
+* **Line-by-line diff** — additions, deletions, and unchanged lines, with line numbers, in either a Unified or a Side-by-Side (Split) view, with word-level highlighting on modified lines in both views (can be switched off under Advanced Settings).
 * **Move detection** — optionally highlight blocks of code that were moved rather than added/removed, distinguished with their own color and a badge.
 * **Live Diff** — optionally auto-compare while typing, debounced, with no need to click Compare.
 * **Auto-detect language** — a one-click, fully offline heuristic guess at the language from the pasted code.
 * **Search within the diff** — highlight and step through every row containing a search term, in either view.
 * **Copy a single line** — a hover-to-reveal copy button on every diff row.
-* **Jump between changes** — `Alt+↓` / `Alt+↑` to jump to the next/previous change.
+* **Jump between changes** — `Alt+↓` / `Alt+↑`, or the floating previous/next buttons (with a "2 / 5" counter) that also work on touch screens.
 * **Large-diff safeguard** — diffs are rendered in chunks (1,500 rows at a time, with a "show more" control), so even a huge, mostly-different file loads in well under a second instead of freezing the tab.
 
 ### Configuring the comparison
@@ -37,14 +37,15 @@ CodeCompare is a web-based utility to compare two snippets of code or text and v
 
 ### Dashboard
 * **History** — every comparison you run is recorded locally (language, added/removed counts, a similarity score), with restore, delete, clear, and JSON export/import.
-* **Batch Compare** — upload a set of "original" files and a set of "modified" files; they're matched by filename (or relative path when a whole folder is selected) and diffed all at once, with a results table (added/removed/similarity per file, files present on only one side flagged as fully added/removed) and a button to open any pair in the normal Compare view.
-* **3-Way Merge** — merge a "Mine" and a "Theirs" version against a common "Base": non-overlapping changes merge automatically, identical changes on both sides merge without duplication, and overlapping/conflicting changes are marked with standard `<<<<<<<` / `=======` / `>>>>>>>` conflict markers in an editable result you can fix up, copy, or download.
+* **Batch Compare** — upload a set of "original" files and a set of "modified" files; they're matched by filename (or relative path when a whole folder is selected) and diffed all at once, with a results table (added/removed/similarity per file, files present on only one side flagged as fully added/removed) a summary line (changed / identical / added / removed, total lines), CSV and JSON report export, and a button to open any pair in the normal Compare view.
+* **3-Way Merge** — merge a "Mine" and a "Theirs" version against a common "Base": non-overlapping changes merge automatically, identical changes on both sides merge without duplication, and overlapping/conflicting changes are marked with standard `<<<<<<<` / `=======` / `>>>>>>>` conflict markers in an editable result you can fix up, copy, or download. Each conflict is also listed as a card with **Accept Mine / Accept Theirs / Accept Both**, plus **Accept all Mine / Theirs** buttons.
 * **Settings** — reset all locally stored data, and pick a syntax color theme (8 official Prism themes, or auto-match the app's light/dark mode).
 
 ### General
 * **Unicode-aware word-level diffing** — Persian/Arabic and other non-ASCII text diffs word-by-word, not character-by-character. The interface itself is English only.
 * **Light/Dark theme** — defaults to your system preference and is remembered. All icons are inline SVG (no emoji), and scrollbars are thin and appear only while scrolling.
 * **Keyboard shortcuts** — the in-app shortcuts dialog (Shortcuts button) shows the full list, using `Ctrl`/`Alt` on Windows and Linux and `⌘`/`⌥` on macOS and iOS.
+* **Draft auto-save** — the Compare and 3-Way Merge inputs are kept in this browser so a refresh or closed tab does not lose your text (switch it off in Settings; opening a share link never loads a draft).
 * **Settings persistence** — everything above is saved in `localStorage`.
 * **Installable / fully offline (PWA)** — installable as an app; every asset (including every Prism language and the font) is precached on first load, so it works with no network connection at all, even on a first, offline install.
 * **Responsive layout** — usable on desktop, tablet, and mobile screen sizes, with a collapsible sidebar on small screens.

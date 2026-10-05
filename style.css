@@ -485,6 +485,8 @@ body:not(.light-theme) .brand-text h1 { color: #fff; }
 .batch-table th, .batch-table td { text-align: start; padding: 8px 10px; border-bottom: 1px solid var(--border-color); }
 .batch-table th { color: var(--text-secondary); font-weight: 600; }
 .batch-table .compare-button { padding: 5px 12px; font-size: 12px; }
+.batch-table td, .batch-table th { white-space: nowrap; }
+.batch-table td:first-child { white-space: normal; overflow-wrap: anywhere; min-width: 90px; }
 .batch-row-added td:nth-child(2) { color: var(--accent-green-text); }
 .batch-row-removed td:nth-child(3) { color: var(--accent-red-text); }
 .batch-loading { color: var(--text-secondary); font-size: 13px; }
@@ -526,6 +528,47 @@ kbd {
     border-radius: var(--radius-s); padding: 3px 8px; font-family: var(--font-code); font-size: 12px;
     color: var(--text-primary); white-space: nowrap;
 }
+
+/* ---------- Change navigation (floating) ---------- */
+.change-nav { position: sticky; bottom: 14px; height: 0; z-index: 8; display: flex; align-items: flex-end; justify-content: flex-end; pointer-events: none; }
+.change-nav[hidden] { display: none; }
+.change-nav-inner {
+    pointer-events: auto; display: inline-flex; align-items: center; gap: 4px; transform: translateY(-100%);
+    margin-inline-end: 26px; padding: 4px; border-radius: 999px;
+    background-color: var(--bg-header); border: 1px solid var(--border-color); box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+.change-nav-btn {
+    display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0;
+    border: none; border-radius: 50%; background: transparent; color: var(--text-primary); cursor: pointer;
+    transition: background-color var(--transition), transform 0.15s ease;
+}
+.change-nav-btn:hover { background-color: var(--hover-bg); }
+.change-nav-btn:active { transform: scale(0.92); }
+.change-nav-btn:focus-visible { outline: 2px solid var(--accent-primary); outline-offset: 1px; }
+.change-nav-count { min-width: 52px; text-align: center; font-size: 12px; font-weight: 600; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+
+/* ---------- Merge conflict resolver ---------- */
+.merge-conflicts { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: var(--radius-m); background-color: var(--bg-input); border: 1px solid var(--border-color); min-width: 0; }
+.merge-conflicts[hidden] { display: none; }
+.merge-conflicts-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.merge-conflicts-summary { font-size: 13px; color: var(--text-secondary); }
+.merge-conflicts .compare-button { padding: 6px 12px; font-size: 12.5px; }
+.merge-conflict-list { display: flex; flex-direction: column; gap: 10px; max-height: 340px; overflow-y: auto; padding-inline-end: 2px; }
+.merge-conflict-card { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: var(--radius-m); background-color: var(--bg-panel); border: 1px solid var(--border-color); min-width: 0; }
+.merge-conflict-title { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+.merge-conflict-sides { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+.merge-conflict-side { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 6px 8px; border-radius: var(--radius-s); border-inline-start: 3px solid transparent; }
+.merge-conflict-side.is-mine { background-color: rgba(97,175,239,0.12); border-inline-start-color: var(--accent-primary); }
+.merge-conflict-side.is-theirs { background-color: rgba(198,120,221,0.12); border-inline-start-color: #c678dd; }
+.merge-conflict-side-title { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-secondary); }
+.merge-conflict-code { margin: 0; font-family: var(--font-code); font-size: 12.5px; line-height: 1.5; white-space: pre; overflow-x: auto; max-height: 140px; color: var(--text-primary); direction: ltr; text-align: left; }
+.merge-conflict-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ---------- Batch summary ---------- */
+.batch-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap; }
+.batch-toolbar[hidden] { display: none; }
+.batch-summary { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+.batch-toolbar .compare-button { padding: 6px 12px; font-size: 12.5px; }
 
 /* ---------- Focus ---------- */
 .icon-button:focus-visible, .upload-btn:focus-visible, .view-toggle-btn:focus-visible, .fold-divider:focus-visible,
@@ -594,7 +637,7 @@ kbd {
     .action-footer .secondary-button { flex: 1 1 0; min-width: 0; padding: 9px 8px; font-size: 13px; }
     #shortcuts-help-btn, .shortcut-hint { display: none; }
 
-    #diff-output-container { padding: 12px; }
+    #diff-output-container { padding: 12px; overflow: visible; }
     .diff-toolbar { flex-direction: column; align-items: stretch; gap: 10px; }
     .diff-toolbar > #new-comparison-btn { width: 100%; }
     .diff-stats { text-align: center; }
@@ -609,6 +652,10 @@ kbd {
     .split-line-num { width: 32px; padding: 0 6px; }
     .unified-line-num { width: 36px; padding: 0 6px; }
     .diff-minimap { display: none; }
+    .change-nav-inner { margin-inline-end: 6px; }
+    .change-nav { bottom: 10px; }
+    .merge-conflict-sides { grid-template-columns: minmax(0, 1fr); }
+    .merge-conflict-actions .compare-button { flex: 1 1 0; min-width: 0; padding: 8px 4px; font-size: 12px; white-space: nowrap; }
 
     .batch-upload-row { grid-template-columns: minmax(0, 1fr); }
     .merge-inputs-row { grid-template-columns: minmax(0, 1fr); }
@@ -624,7 +671,7 @@ kbd {
 
 /* ---------- Print ---------- */
 @media print {
-    .sidebar, .app-topbar, .stats-row, .controls-panel, .diff-toolbar, .sidebar-backdrop, .modal-overlay { display: none !important; }
+    .sidebar, .app-topbar, .stats-row, .controls-panel, .diff-toolbar, .sidebar-backdrop, .modal-overlay, .change-nav { display: none !important; }
     html, body, .app-shell, .app-main, .app-content, .app-view, .container, #diff-output-container {
         background: #fff !important; color: #000 !important; height: auto !important; overflow: visible !important;
     }

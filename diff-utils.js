@@ -302,6 +302,83 @@
         };
     }
 
+    // Pairs the k-th removed line of a change block with the k-th added line,
+    // so a unified view can show word-level highlights like the split view does.
+    function pairReplacements(diffEntries) {
+        const partner = new Map();
+        const n = diffEntries.length;
+        let i = 0;
+        while (i < n) {
+            if (diffEntries[i].type !== 'removed') { i++; continue; }
+            let j = i;
+            while (j < n && diffEntries[j].type === 'removed') j++;
+            let k = j;
+            while (k < n && diffEntries[k].type === 'added') k++;
+            const pairs = Math.min(j - i, k - j);
+            for (let p = 0; p < pairs; p++) {
+                partner.set(i + p, j + p);
+                partner.set(j + p, i + p);
+            }
+            i = k;
+        }
+        return partner;
+    }
+
+    const CONFLICT_START = /^<{7}(?:\s.*)?$/;
+    const CONFLICT_MID = /^={7}$/;
+    const CONFLICT_END = /^>{7}(?:\s.*)?$/;
+
+    // Finds well-formed conflict blocks (start, divider, end) in merged text.
+    function findConflicts(text) {
+        const lines = String(text).split('\n');
+        const conflicts = [];
+        let start = -1;
+        let mid = -1;
+        lines.forEach((line, index) => {
+            const clean = line.replace(/\r$/, '');
+            if (CONFLICT_START.test(clean)) {
+                start = index;
+                mid = -1;
+            } else if (CONFLICT_MID.test(clean) && start !== -1 && mid === -1) {
+                mid = index;
+            } else if (CONFLICT_END.test(clean) && start !== -1 && mid !== -1) {
+                conflicts.push({
+                    start,
+                    mid,
+                    end: index,
+                    mine: lines.slice(start + 1, mid),
+                    theirs: lines.slice(mid + 1, index)
+                });
+                start = -1;
+                mid = -1;
+            }
+        });
+        return conflicts;
+    }
+
+    // choice: 'mine' | 'theirs' | 'both'
+    function resolveConflict(text, conflictIndex, choice) {
+        const conflicts = findConflicts(text);
+        const c = conflicts[conflictIndex];
+        if (!c) return String(text);
+        const lines = String(text).split('\n');
+        let replacement;
+        if (choice === 'mine') replacement = c.mine;
+        else if (choice === 'theirs') replacement = c.theirs;
+        else replacement = c.mine.concat(c.theirs);
+        lines.splice(c.start, c.end - c.start + 1, ...replacement);
+        return lines.join('\n');
+    }
+
+    function resolveAllConflicts(text, choice) {
+        let result = String(text);
+        let guard = 0;
+        while (findConflicts(result).length > 0 && guard++ < 10000) {
+            result = resolveConflict(result, 0, choice);
+        }
+        return result;
+    }
+
     function applyIgnoreBlankLines(diffEntries) {
         return diffEntries.map(entry => {
             if ((entry.type === 'added' || entry.type === 'removed') && entry.line.trim() === '') {
@@ -453,7 +530,8 @@
     const api = {
         computeLineDiff, formatDiffText, computeStats, buildSideBySideRows,
         computeWordDiff, foldRuns, applyIgnoreRules, applyIgnoreBlankLines, detectMovedBlocks, buildUnifiedPatch,
-        detectEncodingIssues, normalizeLineEndingsAndBom, detectLineEndingStyle, mergeThreeWay
+        detectEncodingIssues, normalizeLineEndingsAndBom, detectLineEndingStyle, mergeThreeWay,
+        pairReplacements, findConflicts, resolveConflict, resolveAllConflicts
     };
 
     if (typeof module !== 'undefined' && module.exports) {
