@@ -1464,18 +1464,18 @@ document.addEventListener('DOMContentLoaded', () => {
 <meta charset="UTF-8">
 <title>CodeCompare Report</title>
 <style>
-    body { background:#282c34; color:#abb2bf; font-family:'Fira Code',Consolas,monospace; margin:0; padding:24px; }
+    body { background:#1f2128; color:#d8d8e4; font-family:'Fira Code',Consolas,monospace; margin:0; padding:24px; }
     h1 { font-size:16px; font-weight:600; margin:0 0 4px; color:#fff; }
-    .meta { color:#7f848e; font-size:12px; margin-bottom:18px; }
+    .meta { color:#9393a7; font-size:12px; margin-bottom:18px; }
     .stats { display:flex; gap:16px; margin-bottom:16px; font-size:13px; }
-    .stats span { background:#2c313a; border:1px solid #3e4451; border-radius:6px; padding:4px 10px; }
-    .diff { border:1px solid #3e4451; border-radius:8px; overflow:hidden; }
+    .stats span { background:#252631; border:1px solid #383943; border-radius:4px; padding:4px 10px; }
+    .diff { border:1px solid #383943; border-radius:6px; overflow:hidden; }
     .row { display:flex; gap:10px; padding:2px 12px; white-space:pre-wrap; word-break:break-word; font-size:13px; line-height:1.6; }
-    .row-added { background:rgba(152,195,121,0.15); }
-    .row-removed { background:rgba(224,108,117,0.15); }
+    .row-added { background:rgba(0,181,173,0.16); }
+    .row-removed { background:rgba(255,78,64,0.16); }
     .prefix { width:14px; flex-shrink:0; opacity:0.7; }
-    .row-added .prefix { color:#98c379; }
-    .row-removed .prefix { color:#e06c75; }
+    .row-added .prefix { color:#00b5ad; }
+    .row-removed .prefix { color:#ff6a5e; }
 </style>
 </head>
 <body>
