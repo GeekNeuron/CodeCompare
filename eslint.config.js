@@ -57,6 +57,27 @@ export default [
     }
   },
   {
+    files: ['select-menu.js'],
+    languageOptions: {
+      ecmaVersion: 2021,
+      sourceType: 'script',
+      globals: {
+        window: 'readonly',
+        document: 'readonly',
+        Event: 'readonly',
+        HTMLSelectElement: 'readonly',
+        MutationObserver: 'readonly'
+      }
+    },
+    rules: {
+      'no-unused-vars': 'warn',
+      'no-undef': 'error',
+      eqeqeq: 'warn',
+      'no-var': 'error',
+      'prefer-const': 'warn'
+    }
+  },
+  {
     files: ['dashboard.js'],
     languageOptions: {
       ecmaVersion: 2021,

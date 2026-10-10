@@ -1,9 +1,10 @@
-const CACHE_NAME = 'codecompare-cache-v12';
+const CACHE_NAME = 'codecompare-cache-v15';
 const APP_SHELL = [
     './',
     './index.html',
     './style.css',
     './script.js',
+    './select-menu.js',
     './dashboard.js',
     './diff-utils.js',
     './share-utils.js',
