@@ -116,9 +116,6 @@ button, input, select, textarea { font-family: inherit; }
 .ico-sm { width: 1em; height: 1em; }
 .ico-lg { width: 1.35em; height: 1.35em; }
 .icon-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
-.theme-switcher-btn .ico-moon { display: none; }
-body.light-theme .theme-switcher-btn .ico-sun { display: none; }
-body.light-theme .theme-switcher-btn .ico-moon { display: inline-block; }
 
 /* ---------- Scrollbars: thin, hidden until scrolling ---------- */
 * { scrollbar-width: thin; scrollbar-color: transparent transparent; transition: scrollbar-color 0.35s ease; }
@@ -186,7 +183,6 @@ body:not(.light-theme) .brand-text h1 { color: #fff; }
     background-color: var(--bg-header); border-bottom: 1px solid var(--border-color);
 }
 .view-title { margin: 0; font-size: 18px; color: var(--text-primary); }
-.header-actions { display: flex; align-items: center; gap: 10px; }
 .icon-button {
     display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     background: transparent; border: 1px solid var(--border-color); color: var(--text-secondary);
@@ -195,7 +191,6 @@ body:not(.light-theme) .brand-text h1 { color: #fff; }
     transition: background-color var(--transition), color var(--transition), border-color var(--transition);
 }
 .icon-button:hover { background-color: var(--hover-bg); color: var(--text-primary); border-color: var(--border-strong); }
-.theme-switcher-btn { padding: 8px 10px; font-size: 17px; }
 .icon-button.sidebar-toggle-btn { display: none; font-size: 18px; padding: 8px 10px; }
 
 .app-content {
@@ -353,7 +348,6 @@ body:not(.light-theme) .brand-text h1 { color: #fff; }
     transition: background-color var(--transition), color var(--transition), border-color var(--transition);
 }
 .compare-button:hover { background-color: var(--accent-hover); }
-.compare-button:active { filter: brightness(0.92); }
 .secondary-button { background-color: transparent; color: var(--text-primary); border: 1px solid var(--border-color); }
 .secondary-button:hover { background-color: var(--hover-bg); border-color: var(--border-strong); }
 .shortcut-hint { font-size: 12px; color: var(--text-secondary); margin-inline-start: 4px; }
@@ -596,7 +590,6 @@ kbd {
     transition: background-color var(--transition);
 }
 .change-nav-btn:hover { background-color: var(--hover-bg); }
-.change-nav-btn:active { background-color: var(--accent-primary); color: var(--on-accent); }
 .change-nav-btn:focus-visible { outline: 2px solid var(--accent-primary); outline-offset: 1px; }
 .change-nav-count { min-width: 52px; text-align: center; font-size: 12px; font-weight: 600; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
 
@@ -638,7 +631,6 @@ body.light-theme .app-topbar { box-shadow: 0 1px 0 var(--border-color), 0 4px 14
     box-shadow: var(--shadow-sm), var(--edge-light);
 }
 .stat-card, .history-item { transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition); }
-.stat-card:hover, .history-item:hover { transform: translateY(-2px); box-shadow: var(--shadow-md), var(--edge-light); }
 .container { box-shadow: var(--shadow-md), var(--edge-light); }
 
 .stat-icon { box-shadow: inset 0 0 0 1px rgba(var(--primary-rgb), 0.22); }
@@ -657,25 +649,17 @@ body.light-theme .app-topbar { box-shadow: 0 1px 0 var(--border-color), 0 4px 14
     box-shadow: var(--primary-glow);
     transition: transform var(--transition), box-shadow var(--transition), background-color var(--transition), color var(--transition), border-color var(--transition);
 }
-.compare-button:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35), 0 8px 20px rgba(var(--primary-rgb), 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.22); }
-.compare-button:active { transform: translateY(0); box-shadow: var(--shadow-inset); filter: none; }
 .secondary-button { box-shadow: var(--shadow-xs), var(--edge-light); background-color: var(--bg-panel); }
-.secondary-button:hover { box-shadow: var(--shadow-sm), var(--edge-light); }
-.secondary-button:active { box-shadow: var(--shadow-inset); }
 .icon-button, .upload-btn {
     box-shadow: var(--shadow-xs), var(--edge-light);
     transition: transform var(--transition), box-shadow var(--transition), background-color var(--transition), color var(--transition), border-color var(--transition);
 }
-.icon-button:hover, .upload-btn:hover { box-shadow: var(--shadow-sm), var(--edge-light); transform: translateY(-1px); }
-.icon-button:active, .upload-btn:active { box-shadow: var(--shadow-inset); transform: translateY(0); }
 .view-toggle { box-shadow: var(--shadow-xs); }
 .view-toggle-btn.active { box-shadow: var(--primary-glow); }
 
 /* navigation */
 .sidebar-link { transition: transform var(--transition), background-color var(--transition), color var(--transition), box-shadow var(--transition); }
-.sidebar-link:hover { transform: translateX(2px); }
 .sidebar-link.is-active { box-shadow: var(--primary-glow); }
-.sidebar-link.is-active:hover { transform: none; }
 
 /* toggles */
 .switch-toggle .slider { box-shadow: var(--shadow-inset); }
@@ -684,13 +668,48 @@ body.light-theme .app-topbar { box-shadow: 0 1px 0 var(--border-color), 0 4px 14
 /* floating layers */
 .advanced-settings summary { box-shadow: var(--shadow-xs), var(--edge-light); }
 .advanced-settings-content, .searchable-options, .modal-box, .change-nav-inner { box-shadow: var(--shadow-lg), var(--edge-light); }
-.change-nav-btn:hover { box-shadow: var(--shadow-xs); }
 
 /* diff surfaces */
 .fold-divider, .split-fold-divider { box-shadow: var(--shadow-inset); border-radius: var(--radius-s); }
 .diff-minimap { box-shadow: var(--shadow-inset); }
 .encoding-warning { box-shadow: var(--shadow-sm); }
 .batch-table-wrap, .batch-results { border-radius: var(--radius-m); }
+
+/* hover elevation: mouse only (on touch screens :hover sticks after a tap and would leave a shadow behind) */
+@media (hover: hover) and (pointer: fine) {
+    .stat-card:hover, .history-item:hover { transform: translateY(-2px); box-shadow: var(--shadow-md), var(--edge-light); }
+    .compare-button:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35), 0 8px 20px rgba(var(--primary-rgb), 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.22); }
+    .secondary-button:hover { box-shadow: var(--shadow-sm), var(--edge-light); }
+    .icon-button:hover, .upload-btn:hover { box-shadow: var(--shadow-sm), var(--edge-light); transform: translateY(-1px); }
+    .sidebar-link:hover { transform: translateX(2px); }
+    .sidebar-link.is-active:hover { transform: none; }
+    .change-nav-btn:hover { box-shadow: var(--shadow-xs); }
+}
+
+/* no tap flash and no focus ring for mouse/touch (keyboard focus keeps its ring); there are no :active shadow rules */
+* { -webkit-tap-highlight-color: transparent; }
+button, summary, label, a, input, select, textarea, [role="button"] { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+:focus:not(:focus-visible) { outline: none; }
+summary::-webkit-details-marker { display: none; }
+
+/* ---------- Code colour themes: the code area takes the Prism theme's own surface ---------- */
+.code-themed .diff-output-lines, .code-themed .split-lines { background-color: var(--code-bg); color: var(--code-fg); }
+.code-themed .unified-line, .code-themed .split-line { border-bottom-color: var(--code-line); }
+.code-themed .unified-line-num, .code-themed .split-line-num { color: var(--code-muted); opacity: 1; border-right-color: var(--code-line); }
+.code-themed .unified-line.type-added .unified-line-prefix { color: var(--code-add); }
+.code-themed .unified-line.type-removed .unified-line-prefix { color: var(--code-del); }
+.code-themed .fold-divider, .code-themed .split-fold-divider { color: var(--code-muted); border-color: var(--code-line); }
+.code-themed .fold-divider:hover, .code-themed .split-fold-divider:hover { color: var(--code-fg); }
+.code-themed .fold-divider .fold-icon, .code-themed .split-fold-divider .fold-icon { color: var(--code-muted); }
+
+/* live preview under the Code color theme setting */
+.settings-row .syntax-preview {
+    flex: 1 1 100%; max-width: 100%; margin: 4px 0 0; padding: 4px 0; border-radius: var(--radius-m);
+    border: 1px solid var(--border-color); background-color: var(--code-bg, var(--bg-input)); color: var(--code-fg, var(--text-primary));
+    box-shadow: var(--shadow-inset); overflow-x: auto; font-size: 13px; line-height: 1.7;
+}
+.settings-row .syntax-preview .unified-line:last-child { border-bottom: none; }
+.settings-row .syntax-preview .unified-line-code { white-space: pre; }
 
 /* ---------- Tablet / mobile ---------- */
 @media (max-width: 1100px) {
@@ -798,4 +817,11 @@ body.light-theme .app-topbar { box-shadow: 0 1px 0 var(--border-color), 0 4px 14
     .moved, .row-moved { background: #f5eaff !important; }
     .diff-output-lines, .split-lines { max-height: none !important; overflow: visible !important; }
     a[href]::after { content: none !important; }
+    .diff-output-lines, .split-lines { background: #fff !important; color: #000 !important; }
+    .diff-output-lines .token, .split-lines .token { color: #000 !important; text-shadow: none !important; }
+    .unified-line-num, .split-line-num { color: #555 !important; }
 }
+
+/* light / dark choice in Settings > Appearance */
+.theme-choice-btn { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; }
+.theme-choice-btn .ico { width: 16px; height: 16px; }

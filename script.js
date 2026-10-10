@@ -23,7 +23,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const diffOutputEl = document.getElementById('diff-output');
     const originalLinesEl = document.getElementById('original-lines');
     const modifiedLinesEl = document.getElementById('modified-lines');
-    const themeSwitcher = document.getElementById('theme-switcher');
+    const themeLightBtn = document.getElementById('theme-light-btn');
+    const themeDarkBtn = document.getElementById('theme-dark-btn');
     const prismThemeLink = document.getElementById('prism-theme-link');
     const syntaxThemeSelect = document.getElementById('syntax-theme-select');
     const langSearchInput = document.getElementById('language-search');
@@ -205,7 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
             historyDelete: 'Delete',
             settingsTitle: 'Settings',
             settingsAppearance: 'Appearance',
-            settingsAppearanceHint: 'Switch between light and dark theme from the top bar.',
+            settingsAppearanceHint: 'Choose the light or dark interface theme.',
             settingsSyntaxThemeTitle: 'Code color theme',
             settingsSyntaxThemeHint: 'Choose the syntax highlighting theme used for code.',
             themeAuto: 'Auto (match app theme)',
@@ -474,7 +475,8 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        themeSwitcher.addEventListener('click', toggleTheme);
+        if (themeLightBtn) themeLightBtn.addEventListener('click', () => setTheme(false));
+        if (themeDarkBtn) themeDarkBtn.addEventListener('click', () => setTheme(true));
         if (syntaxThemeSelect) {
             syntaxThemeSelect.addEventListener('change', () => {
                 state.syntaxTheme = syntaxThemeSelect.value;
@@ -1596,10 +1598,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function toggleTheme() {
-        state.isDarkTheme = !state.isDarkTheme;
+    function setTheme(isDark) {
+        if (state.isDarkTheme === isDark) return;
+        state.isDarkTheme = isDark;
         applyTheme();
         saveSettings();
+    }
+
+    function syncThemeButtons() {
+        [[themeLightBtn, !state.isDarkTheme], [themeDarkBtn, state.isDarkTheme]].forEach(([btn, active]) => {
+            if (!btn) return;
+            btn.classList.toggle('active', active);
+            btn.setAttribute('aria-pressed', String(active));
+        });
     }
 
     const PRISM_THEMES = {
@@ -1614,11 +1625,66 @@ document.addEventListener('DOMContentLoaded', () => {
         funky: 'prism-funky'
     };
 
+    // Each Prism theme was designed for its own background, so the code area adopts the theme's
+    // surface (background, text, gutter and line colours) instead of only recolouring the tokens.
+    const CODE_SURFACES = {
+        okaidia: { bg: '#272822', fg: '#f8f8f2', muted: '#8f9bab', dark: true },
+        dark: { bg: '#4c3f33', fg: '#ffffff', muted: '#c9b49b', dark: true },
+        tomorrow: { bg: '#2d2d2d', fg: '#cccccc', muted: '#9a9a9a', dark: true },
+        twilight: { bg: '#141414', fg: '#f2f2f2', muted: '#8c8c8c', dark: true },
+        solarizedlight: { bg: '#fdf6e3', fg: '#657b83', muted: '#7d8f92', dark: false },
+        coy: { bg: '#fdfdfd', fg: '#000000', muted: '#67747f', dark: false },
+        funky: { bg: '#000000', fg: '#ffffff', muted: '#aaaaaa', dark: true },
+        prism: { bg: '#f5f2f0', fg: '#000000', muted: '#66768a', dark: false }
+    };
+    const CODE_SURFACE_VARS = ['--code-bg', '--code-fg', '--code-muted', '--code-line', '--code-add', '--code-del'];
+
+    function applyCodeSurface() {
+        const root = document.documentElement;
+        const surface = CODE_SURFACES[state.syntaxTheme];
+        document.body.classList.toggle('code-themed', !!surface);
+        if (!surface) {
+            CODE_SURFACE_VARS.forEach(name => root.style.removeProperty(name));
+            return;
+        }
+        root.style.setProperty('--code-bg', surface.bg);
+        root.style.setProperty('--code-fg', surface.fg);
+        root.style.setProperty('--code-muted', surface.muted);
+        root.style.setProperty('--code-line', surface.dark ? 'rgba(255, 255, 255, 0.09)' : 'rgba(0, 0, 0, 0.09)');
+        root.style.setProperty('--code-add', surface.dark ? '#2dd4bf' : '#08766a');
+        root.style.setProperty('--code-del', surface.dark ? '#ff6a5e' : '#bf3620');
+    }
+
+    const SYNTAX_PREVIEW_LINES = [
+        { type: 'unchanged', code: '// greet someone' },
+        { type: 'unchanged', code: 'function greet(name) {' },
+        { type: 'removed', code: '  const msg = "Hello " + name;' },
+        { type: 'added', code: '  const msg = `Hello ${name}!`;' },
+        { type: 'unchanged', code: '  return msg.length > 10 ? msg : 42;' },
+        { type: 'unchanged', code: '}' }
+    ];
+
+    function renderSyntaxPreview() {
+        const el = document.getElementById('syntax-preview');
+        if (!el || !window.Prism || !Prism.languages.javascript) return;
+        el.innerHTML = SYNTAX_PREVIEW_LINES.map((line, index) => {
+            const prefix = line.type === 'added' ? '+' : line.type === 'removed' ? '\u2212' : '';
+            return `<div class="unified-line type-${line.type}">` +
+                `<span class="unified-line-num">${index + 1}</span>` +
+                `<span class="unified-line-prefix">${prefix}</span>` +
+                `<code class="unified-line-code">${Prism.highlight(line.code, Prism.languages.javascript, 'javascript')}</code>` +
+                '</div>';
+        }).join('');
+    }
+
     function applyTheme() {
         const chosen = PRISM_THEMES[state.syntaxTheme];
         const themeName = chosen || (state.isDarkTheme ? 'prism-okaidia' : 'prism');
         prismThemeLink.href = `lib/prism/themes/${themeName}.min.css`;
         document.body.classList.toggle('light-theme', !state.isDarkTheme);
+        syncThemeButtons();
+        applyCodeSurface();
+        renderSyntaxPreview();
     }
 
     function updatePluginCheckboxes() {

@@ -29,7 +29,7 @@
             <symbol id="i-compare" viewBox="0 0 24 24"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></symbol>
             <symbol id="i-history" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
             <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5z"/><path d="m3 13 9 5 9-5"/></symbol>
-            <symbol id="i-merge" viewBox="0 0 24 24"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 21V9a9 9 0 0 0 9 9"/></symbol>
+            <symbol id="i-merge" viewBox="0 0 24 24"><path d="M4 3c0 7.5 8 6 8 11.5"/><path d="M20 3c0 7.5-8 6-8 11.5"/><path d="M12 3v11.5"/><circle cx="12" cy="18.5" r="3"/></symbol>
             <symbol id="i-settings" viewBox="0 0 24 24"><path d="M21 4h-7"/><path d="M10 4H3"/><path d="M21 12h-9"/><path d="M8 12H3"/><path d="M21 20h-5"/><path d="M12 20H3"/><path d="M14 2v4"/><path d="M8 10v4"/><path d="M16 18v4"/></symbol>
             <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></symbol>
             <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></symbol>
@@ -95,9 +95,6 @@
             <header class="app-topbar">
                 <button type="button" id="sidebar-toggle-btn" class="icon-button sidebar-toggle-btn" aria-label="Toggle menu" aria-expanded="false" aria-controls="app-sidebar"><svg class="ico" aria-hidden="true"><use href="#i-menu"></use></svg></button>
                 <h2 id="view-title" class="view-title" data-i18n="navCompare">Compare</h2>
-                <div class="header-actions">
-                    <button id="theme-switcher" type="button" aria-label="Toggle light/dark theme" title="Switch theme" class="icon-button theme-switcher-btn"><svg class="ico ico-sun" aria-hidden="true"><use href="#i-sun"></use></svg><svg class="ico ico-moon" aria-hidden="true"><use href="#i-moon"></use></svg></button>
-                </div>
             </header>
 
             <main class="app-content">
@@ -388,7 +385,11 @@
                         <div class="settings-row">
                             <div>
                                 <strong data-i18n="settingsAppearance">Appearance</strong>
-                                <p data-i18n="settingsAppearanceHint">Switch between light and dark theme from the top bar.</p>
+                                <p data-i18n="settingsAppearanceHint">Choose the light or dark interface theme.</p>
+                            </div>
+                            <div class="view-toggle theme-choice" role="group" aria-label="Interface theme">
+                                <button type="button" id="theme-light-btn" class="view-toggle-btn theme-choice-btn" aria-pressed="false"><svg class="ico" aria-hidden="true"><use href="#i-sun"></use></svg><span>Light</span></button>
+                                <button type="button" id="theme-dark-btn" class="view-toggle-btn theme-choice-btn" aria-pressed="true"><svg class="ico" aria-hidden="true"><use href="#i-moon"></use></svg><span>Dark</span></button>
                             </div>
                         </div>
                         <div class="settings-row">
@@ -407,6 +408,7 @@
                                 <option value="funky">Funky</option>
                                 <option value="prism">Prism Default</option>
                             </select>
+                            <div id="syntax-preview" class="syntax-preview diff-output-lines" role="img" aria-label="Preview of the selected code color theme"></div>
                         </div>
                         <div class="settings-row">
                             <div>
