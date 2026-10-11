@@ -47,6 +47,48 @@
         }
     }
 
+    // Friendly language name for a Prism id, plus a short form used only where the full name would be cut off.
+    var LANGUAGE_SHORT_NAMES = {
+        javascript: 'JS', typescript: 'TS', markdown: 'MD', powershell: 'PS', bash: 'Shell', docker: 'Docker',
+        objectivec: 'ObjC', 'visual-basic': 'VB', protobuf: 'Proto', wasm: 'Wasm', properties: 'Props',
+        apacheconf: 'Apache', markup: 'HTML'
+    };
+    var statLanguageId = '\u2013';
+
+    function languageNames(id) {
+        var names = window.CodeCompareLanguages || {};
+        var full = names[id] || id;
+        return { full: full, short: LANGUAGE_SHORT_NAMES[id] || null };
+    }
+
+    function fitStatLanguage() {
+        if (!statLanguageEl) return;
+        var id = statLanguageId;
+        if (id === '\u2013') {
+            statLanguageEl.textContent = id;
+            statLanguageEl.removeAttribute('title');
+            return;
+        }
+        var names = languageNames(id);
+        statLanguageEl.textContent = names.full;
+        statLanguageEl.title = names.full;
+        // only abbreviate when the card is visible and the full name really does not fit
+        if (statLanguageEl.clientWidth > 0 && statLanguageEl.scrollWidth > statLanguageEl.clientWidth && names.short) {
+            statLanguageEl.textContent = names.short;
+        }
+    }
+
+    if (statLanguageEl && typeof window.ResizeObserver === 'function') {
+        var lastWidth = 0;
+        new window.ResizeObserver(function () {
+            if (statLanguageEl.clientWidth !== lastWidth) {
+                lastWidth = statLanguageEl.clientWidth;
+                fitStatLanguage();
+            }
+        }).observe(statLanguageEl);
+    }
+    window.addEventListener('resize', fitStatLanguage);
+
     function renderStats(list) {
         var totalAdded = 0;
         var totalRemoved = 0;
@@ -75,7 +117,8 @@
         if (statTotalEl) statTotalEl.textContent = String(list.length);
         if (statAddedEl) statAddedEl.textContent = String(totalAdded);
         if (statRemovedEl) statRemovedEl.textContent = String(totalRemoved);
-        if (statLanguageEl) statLanguageEl.textContent = topLang;
+        statLanguageId = topLang;
+        fitStatLanguage();
         if (statSimilarityEl) {
             statSimilarityEl.textContent = similarityCount === 0
                 ? '\u2013'
@@ -801,7 +844,8 @@
 
     window.CodeCompareDashboard = {
         recordRun: recordRun,
-        saveMergeDraft: saveMergeDraft
+        saveMergeDraft: saveMergeDraft,
+        fitStatLanguage: fitStatLanguage
     };
 
     renderHistory();

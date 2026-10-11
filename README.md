@@ -1,141 +1,189 @@
 # CodeCompare
 
-CodeCompare is a web-based utility to compare two snippets of code or text and view a syntax-highlighted, line-by-line diff, wrapped in a small dashboard (Compare / History / Batch Compare / Settings). It's built with vanilla HTML, CSS, and JavaScript, and is fully self-contained: Prism.js (core, every language grammar, every plugin, and its themes) plus the Fira Code font are all bundled locally, so it works completely offline from the very first load, with no CDN dependency at all.
+CodeCompare is a fast, private diff tool that runs entirely in your browser. Paste or drop two versions of some code or text and get a syntax-highlighted, line-by-line comparison — then keep going with batch comparison across files, a 3-way merge with one-click conflict resolution, a local history, and shareable links.
+
+It is plain HTML, CSS and JavaScript with **no build step and no backend**. Prism.js (core, every language grammar, plugins and themes) and the Fira Code font are bundled in the repository, so it works completely offline from the very first load, and nothing you paste is ever uploaded anywhere.
 
 ## Live Demo
 
 **[https://GeekNeuron.github.io/CodeCompare/](https://GeekNeuron.github.io/CodeCompare/)**
 
+## Contents
+
+- [Features](#features)
+- [How to use](#how-to-use)
+- [Keyboard shortcuts](#keyboard-shortcuts)
+- [Privacy and stored data](#privacy-and-stored-data)
+- [Running locally](#running-locally)
+- [Development](#development)
+- [Project structure](#project-structure)
+- [How it works](#how-it-works)
+- [Known limitations](#known-limitations)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing) · [License](#license)
+
 ## Features
 
-### Comparing
-* **Side-by-side input** — two independent text areas for the original and modified code, with file upload and drag-and-drop on either side.
-* **Swap** — instantly swap the original and modified content.
-* **Line-by-line diff** — additions, deletions, and unchanged lines, with line numbers, in either a Unified or a Side-by-Side (Split) view, with word-level highlighting on modified lines in both views (can be switched off under Advanced Settings).
-* **Move detection** — optionally highlight blocks of code that were moved rather than added/removed, distinguished with their own color and a badge.
-* **Live Diff** — optionally auto-compare while typing, debounced, with no need to click Compare.
-* **Auto-detect language** — a one-click, fully offline heuristic guess at the language from the pasted code.
-* **Search within the diff** — highlight and step through every row containing a search term, in either view.
-* **Copy a single line** — a hover-to-reveal copy button on every diff row.
-* **Jump between changes** — `Alt+↓` / `Alt+↑`, or the floating previous/next buttons (with a "2 / 5" counter) that also work on touch screens.
-* **Large-diff safeguard** — diffs are rendered in chunks (1,500 rows at a time, with a "show more" control), so even a huge, mostly-different file loads in well under a second instead of freezing the tab.
+### Compare
 
-### Configuring the comparison
-* **Syntax highlighting** — pick a language from a searchable dropdown, or let auto-detect guess it.
-* **Configurable Prism plugins** — under a collapsible "Advanced Settings" panel: Match Braces, Show Invisibles, Inline Color, CSS Previewers, Command Line, and Autolinker.
-* **Ignore Whitespace / Ignore Blank Lines / Ignore Case** — three independent, real diff-level options (not just display formatting).
-* **Format JSON** — pretty-print valid JSON on either side before comparing.
-* **Custom ignore rules (regex)** — drop whole matching lines or strip just the matched text, with invalid patterns reported without blocking valid ones. Save/load named presets of these rules.
-* **Collapse unchanged lines** — long unchanged runs fold into a "Show N hidden lines" divider; click to expand. Toggle off to always show everything.
-* **Wrap long lines** — switch between horizontal scrolling and wrapping.
+- **Two inputs** — Original and Modified text areas with file upload (max 2 MB) and drag-and-drop on either side. **Swap** exchanges them; **Format JSON** pretty-prints valid JSON before comparing.
+- **Unified and Split views** — added, removed and unchanged lines with line numbers. Replaced lines get **word-level highlights** in both views (switchable under Advanced Settings; on those lines the highlight replaces syntax colors).
+- **Move detection** — optionally mark blocks that were moved instead of removed and re-added.
+- **Live Diff** — optionally re-compare while you type.
+- **Navigate changes** — floating previous/next buttons with a "2 / 5" counter (works with touch), `Alt+↓/↑` on the keyboard, and a minimap of where the changes are.
+- **Search inside the diff** — highlights every matching row and steps through them in either view.
+- **Fold unchanged lines** — long unchanged runs collapse into a "Show N hidden lines" divider.
+- **Per-line copy** — hover (or tap) a row to copy that single line.
+- **Language** — 70 languages from a searchable list, or one-click offline **Auto-detect**.
+- **Large inputs** — rows render in chunks of 1,500 with a "show more" control, so huge diffs do not freeze the tab.
 
-### Exporting a result
-* **Copy / download the diff** — copy to clipboard or download as a `.diff` file.
-* **Export HTML report** — a standalone, self-contained HTML file of the comparison (no external dependencies, opens anywhere offline).
-* **Print / Save as PDF** — a print-optimized layout via the browser's own print dialog.
-* **Shareable link, no server required** — a link that encodes the full comparison (gzip-compressed) in the URL itself; opening it restores everything. Nothing is ever uploaded anywhere.
+### Ignore options
+
+Whitespace (indentation and runs of spaces), blank lines and case are ignored at the **diff level**, not just visually. **Custom ignore rules** accept regular expressions (one per line) to drop matching lines or strip matched text; invalid patterns are reported without blocking valid ones, and rule sets can be saved as named presets. Encoding differences (line endings, BOM) are detected and offered as a one-click normalization.
+
+### Export and share
+
+- Copy the diff, or download it as `.diff` / `.patch`.
+- **Export HTML report** — a single self-contained file that opens anywhere.
+- **Print / Save as PDF** — a print layout with light colors regardless of theme.
+- **Share link** — the whole comparison is gzip-compressed into the URL itself. Opening it restores the comparison; nothing touches a server.
 
 ### Dashboard
-* **History** — every comparison you run is recorded locally (language, added/removed counts, a similarity score), with restore, delete, clear, and JSON export/import.
-* **Batch Compare** — upload a set of "original" files and a set of "modified" files; they're matched by filename (or relative path when a whole folder is selected) and diffed all at once, with a results table (added/removed/similarity per file, files present on only one side flagged as fully added/removed) a summary line (changed / identical / added / removed, total lines), CSV and JSON report export, and a button to open any pair in the normal Compare view.
-* **3-Way Merge** — merge a "Mine" and a "Theirs" version against a common "Base": non-overlapping changes merge automatically, identical changes on both sides merge without duplication, and overlapping/conflicting changes are marked with standard `<<<<<<<` / `=======` / `>>>>>>>` conflict markers in an editable result you can fix up, copy, or download. Each conflict is also listed as a card with **Accept Mine / Accept Theirs / Accept Both**, plus **Accept all Mine / Theirs** buttons.
-* **Settings** — reset all locally stored data, and pick a syntax color theme (8 official Prism themes, or auto-match the app's light/dark mode).
 
-### General
-* **Unicode-aware word-level diffing** — Persian/Arabic and other non-ASCII text diffs word-by-word, not character-by-character. The interface itself is English only.
-* **Light/Dark theme** — defaults to your system preference and is remembered. All icons are inline SVG (no emoji), and scrollbars are thin and appear only while scrolling.
-* **Keyboard shortcuts** — the in-app shortcuts dialog (Shortcuts button) shows the full list, using `Ctrl`/`Alt` on Windows and Linux and `⌘`/`⌥` on macOS and iOS.
-* **Draft auto-save** — the Compare and 3-Way Merge inputs are kept in this browser so a refresh or closed tab does not lose your text (switch it off in Settings; opening a share link never loads a draft).
-* **Settings persistence** — everything above is saved in `localStorage`.
-* **Installable / fully offline (PWA)** — installable as an app; every asset (including every Prism language and the font) is precached on first load, so it works with no network connection at all, even on a first, offline install.
-* **Responsive layout** — usable on desktop, tablet, and mobile screen sizes, with a collapsible sidebar on small screens.
+- **History** — the last 30 comparisons with language, added/removed counts and similarity; restore, delete, clear, and JSON export/import. Summary cards show totals, the most used language and average similarity.
+- **Batch Compare** — choose "original" and "modified" files or whole folders; files are paired by name (or relative path), diffed together, and listed with added/removed/similarity. Files that exist on one side only are flagged as new or deleted. A summary line and **CSV / JSON report export** are included, and any pair opens in the normal Compare view.
+- **3-Way Merge** — merge _Mine_ and _Theirs_ against a common _Base_. Non-overlapping and identical changes merge automatically; overlapping changes get standard `<<<<<<<` / `=======` / `>>>>>>>` markers in an editable result. Every conflict also appears as a card with **Accept Mine / Accept Theirs / Accept Both**, plus **Accept all Mine / Theirs**.
 
-## How to Use
+### Appearance and settings
 
-1. Open the [live demo](https://GeekNeuron.github.io/CodeCompare/) (or run it locally, see below).
-2. Paste your first snippet into **Original Code** and the second into **Modified Code** — or upload/drag a file onto either panel.
-3. Optionally pick a language (or click **Auto-detect**) and open **Advanced Settings** to adjust plugins and ignore rules.
-4. Click **Compare** (or press `Ctrl+Enter`) to see the highlighted diff and the added/removed summary.
-5. Use **Copy Diff**, **Download .diff**, **Export HTML Report**, **Print / Save as PDF**, or **Share Link** to export the result, or **← New Comparison** to go back and edit the inputs.
-6. Use the sidebar to check **History**, run a **Batch Compare** across multiple files, or adjust **Settings**.
+- **Light / Dark theme** (Settings → Appearance). The first visit follows your system preference.
+- **Code color theme** — Auto (follows the app theme) or one of eight Prism themes. A theme restyles the whole code area (background, text, line numbers, dividers), and a live preview in Settings shows the result immediately.
+- **Auto-save drafts** — Compare and Merge inputs survive a refresh or closed tab (switch off in Settings; opening a share link never loads a draft).
+- **Reset local data** — clears settings, history and drafts.
+- Consistent styled dropdowns, thin scrollbars that appear only while scrolling, and no tap-highlight or pressed-state shadows on touch screens.
 
-## Running Locally
+### Offline and responsive
+
+- **Installable PWA** — every asset is precached by the service worker, including all language grammars and the font.
+- **Responsive** — desktop, tablet and phone layouts, with a slide-in sidebar on small screens.
+
+## How to use
+
+1. Open the live demo (or [run it locally](#running-locally)).
+2. Paste text into **Original Code** and **Modified Code**, or drop files onto the panels.
+3. Optionally pick a language (or click **Auto-detect**) and open **Advanced Settings** for plugins, ignore options and word-level highlights.
+4. Press **Compare** (or `Ctrl+Enter` / `⌘+Enter`).
+5. Move between changes with the floating arrows, search the diff, switch Unified/Split, then export or share. **New Comparison** returns to the inputs.
+6. Use the sidebar for **History**, **Batch Compare**, **3-Way Merge** and **Settings**.
+
+## Keyboard shortcuts
+
+The **Shortcuts** button in Compare shows these for your platform (`Ctrl`/`Alt` on Windows and Linux, `⌘`/`⌥` on macOS and iOS).
+
+| Keys                      | Action                                                               |
+| ------------------------- | -------------------------------------------------------------------- |
+| `Ctrl/⌘ + Enter`          | Run the comparison                                                   |
+| `Alt/⌥ + ↓` / `↑`         | Next / previous change                                               |
+| `Enter` / `Shift + Enter` | Next / previous search match (in the search box)                     |
+| `Esc`                     | Close a dialog, panel or dropdown                                    |
+| `↑ ↓ Home End Enter`      | Move through and choose from an open dropdown; type a letter to jump |
+
+## Privacy and stored data
+
+All processing happens in your browser. The app stores the following in `localStorage` on your device only:
+
+| Key                                                   | Contents                                                                |
+| ----------------------------------------------------- | ----------------------------------------------------------------------- |
+| `codecompare-settings`                                | Theme, language, view options, plugin switches, code color theme        |
+| `codecompare_history_v1`                              | Up to 30 history entries, including short snippets of the compared text |
+| `codecompare-draft-v1` / `codecompare-merge-draft-v1` | Auto-saved input drafts (the full text)                                 |
+| `codecompare-ignore-presets`                          | Your saved ignore-rule presets                                          |
+
+Drafts and history contain your text in plain form. On a shared computer, turn off **Auto-save drafts** and use **Reset Data** when you are done.
+
+## Running locally
 
 ```bash
 git clone https://github.com/GeekNeuron/CodeCompare.git
 cd CodeCompare
 ```
 
-Since this is a static site, you can simply open `index.html` in a browser. For a closer match to how it behaves when served over HTTP (recommended, since PWA/service-worker features and some browser APIs require `http(s)://`), use a local server:
+Because it is a static site you can open `index.html` directly. To get the same behavior as the hosted version (service worker, PWA install, some browser APIs need `http(s)://`), serve it:
 
 ```bash
 npm install
-npm run serve
+npm run serve      # http-server on http://localhost:8080 with caching disabled
 ```
-
-Then open the printed local URL in your browser.
 
 ## Development
 
-This project uses ESLint and Prettier to keep the codebase consistent.
-
 ```bash
 npm install
-npm run lint          # check script.js, dashboard.js, diff-utils.js, share-utils.js, json-utils.js, and service-worker.js for issues
-npm run format        # auto-format js/css/html/md
-npm run format:check  # verify formatting without writing changes
-npm test              # run the diff-engine unit tests
+npm run lint           # ESLint: script, dashboard, select-menu, diff/share/json utils, service worker
+npm run format         # Prettier: write
+npm run format:check   # Prettier: check only
+npm test               # Jest: unit tests for the diff, merge, conflict and encoding engine
 ```
 
-A GitHub Actions workflow (`.github/workflows/ci.yml`) runs tests, lint, and format checks on every push and pull request. A separate workflow (`.github/workflows/deploy.yml`) automatically deploys `main` to GitHub Pages.
+Jest covers the dependency-free engines (`diff-utils.js`, `share-utils.js`, `json-utils.js`). The interface itself has no automated tests in this repository, so after UI changes it is worth checking both themes at a phone width and a desktop width, plus the Settings dropdowns.
 
-## File Structure
+The GitHub repository also runs CI (tests, lint, format check) and deploys `main` to GitHub Pages through workflows in `.github/workflows/`.
+
+**Releasing a change:** the service worker caches the whole app. When you change any cached file, bump `CACHE_NAME` in `service-worker.js` (for example `codecompare-cache-v18`) and add any new file to its precache list, otherwise returning visitors keep the old version.
+
+## Project structure
 
 ```
 CodeCompare/
-├── index.html          # Page structure and markup (app shell: sidebar, topbar, Compare/History/Batch/Settings views)
-├── style.css           # Styling, dashboard layout, animations, and responsive/print rules
-├── script.js           # Core app logic (state, diffing, i18n, Prism integration, exports)
-├── dashboard.js         # Sidebar navigation, History, and Batch Compare
-├── diff-utils.js        # Dependency-free line/word-diff engine (unit tested)
-├── share-utils.js        # Shareable-link encoding/decoding (unit tested)
-├── json-utils.js         # JSON detection/pretty-print helpers (unit tested)
-├── __tests__/            # Jest unit tests for diff-utils.js, share-utils.js, json-utils.js
-├── service-worker.js   # Precaches the entire app (including every Prism language/theme and the font) for full offline use
-├── manifest.json        # PWA metadata (name, icons, theme color)
-├── icons/               # App icons used by the PWA manifest
-├── lib/prism.js         # Bundled Prism.js core
-├── lib/prism/           # Bundled Prism plugins, every language grammar, and 8 themes (all local, no CDN)
-├── fonts/               # Bundled Fira Code font files (all local, no CDN)
-├── .github/workflows/  # CI and GitHub Pages deployment
+├── index.html          # App shell: sidebar, top bar, Compare / History / Batch / Merge / Settings views, SVG icon sprite
+├── style.css           # Design tokens (dark + light palettes, radii, elevation), layout, responsive and print rules
+├── script.js           # Core app: state, comparison pipeline, diff rendering, themes, exports, drafts, shortcuts
+├── dashboard.js        # Sidebar navigation, History and stats, Batch Compare, 3-Way Merge UI and conflict resolver
+├── select-menu.js      # Styled dropdown replacing native <select> popups (keyboard + screen-reader friendly)
+├── diff-utils.js       # Dependency-free engine: line/word diff, move detection, patches, 3-way merge, conflict parsing
+├── share-utils.js      # Share-link encoding/decoding (Compression Streams API)
+├── json-utils.js       # JSON detection and pretty-printing
+├── service-worker.js   # Precaches the whole app for offline use
+├── manifest.json       # PWA metadata
+├── __tests__/          # Jest tests (diff-utils)
+├── icons/              # PWA icons
+├── lib/                # Bundled Prism.js: core, plugins, 8 themes, language grammars
+├── fonts/              # Bundled Fira Code
+├── eslint.config.js, package.json
 └── README.md
 ```
 
-## Technologies Used
+## How it works
 
-* HTML5, CSS3, JavaScript (ES6+)
-* [Prism.js](https://prismjs.com/) (core + every official language grammar, plugin, and theme, bundled locally) for syntax highlighting, applied per line in both views for reliable, driftless line dividers regardless of wrapping or folding
-* A small in-house LCS-based line-diff and word-diff engine (`diff-utils.js`), with move/block detection, Unicode-aware tokenization, and blank-line-aware post-processing, unit tested with Jest
-* A small in-house share-link engine (`share-utils.js`) using the browser's native Compression Streams API, unit tested with Jest
-* A small in-house JSON formatting helper (`json-utils.js`), unit tested with Jest
-* A Service Worker that precaches the full app (including every bundled Prism asset and font) for offline/PWA support from the first load
+- **Pipeline.** `runComparison()` reads both inputs, applies ignore rules, runs the LCS line diff (`computeLineDiff`) with optional case/whitespace keys, optionally post-processes blank lines and detects moved blocks, then renders unified or split rows. Replaced lines are paired (k-th removed with k-th added) to produce word-level diffs.
+- **Highlighting.** Prism is applied per line so folding, wrapping and line dividers never drift. Language grammars are loaded on demand from `lib/prism/components/` by the Prism autoloader.
+- **Themes.** `style.css` defines all colors as CSS variables for the dark and light palettes. A chosen Prism theme additionally sets `--code-*` variables so the code area adopts that theme's own surface.
+- **Dropdowns.** `select-menu.js` keeps the real `<select>` in the DOM (hidden), mirrors its value and options, and renders the menu in a portal on `<body>` so panels never clip it.
+- **Persistence.** Settings, history and drafts live in `localStorage`; shared comparisons live in the URL hash.
 
-## Known Limitations / Roadmap
+## Known limitations
 
-* The diff engine is a straightforward LCS algorithm (O(n·m)); for very large, very mismatched inputs it falls back to a coarse "everything changed" diff rather than freezing the tab, and beyond that the renderer itself caps how many rows it draws at once (with a "show more" control) rather than doing full scroll-based virtualization.
-* The downloaded/copied `.diff` uses simple `--- Original` / `+++ Modified` headers without hunk (`@@`) markers, so it isn't a drop-in replacement for `git diff` output.
-* Word-level highlighting is only available in the Split view. On a replaced line pair there, the changed words are highlighted but that specific line shows plain text rather than full syntax coloring (unchanged and purely added/removed lines still get full Prism syntax highlighting).
-* Custom ignore-rule patterns are always case-sensitive regardless of the separate "Ignore Case" toggle; add an explicit case-insensitive character class in the pattern if needed (JavaScript regex syntax, no inline `(?i)` flag support).
-* Move detection matches on exact line content (after trimming) — it won't catch a moved block that was also edited along the way.
-* Share links encode the full comparison in the URL itself; very large comparisons produce very long links, which some chat apps or SMS may truncate. There's no length limit enforced, but a console warning is logged past ~6000 characters.
-* The Line Numbers and Toolbar Prism plugins only apply to the plain (non-collapsed) Unified view and to the Split view's own line numbers - when Unified view collapses unchanged lines, it renders as several independently highlighted chunks, which don't support those two particular plugins (every other plugin still works per chunk).
-* Batch Compare keeps everything in memory for the session — nothing is saved unless you open a pair and it gets recorded in History.
-* 3-Way Merge aligns changes line-by-line against the Base rather than doing full hunk-based alignment like `git merge-file`; on a narrow edge case — one side leaves a line untouched right where the other side both changes that line *and* inserts new content immediately next to it — it can silently take the changed side instead of flagging a conflict there. Everyday single-line and non-adjacent changes (the vast majority of real merges) are handled correctly and match `git merge-file`'s output; always review the result before using it.
-* No folder/three-way-merge comparison, no real-time multi-user collaboration, and no AI-generated diff summaries — these are intentionally out of scope to keep the tool 100% client-side and offline.
+- The diff is a straightforward LCS (O(n·m)). Very large, very different inputs fall back to a coarse "everything changed" diff, and the renderer draws rows in chunks rather than fully virtualizing the list.
+- `.diff` / `.patch` files use simple `--- Original` / `+++ Modified` headers; check the output if you plan to feed it to `git apply`.
+- Word-level highlighting replaces syntax colors on the lines it applies to (the other lines keep full highlighting). Turn it off under Advanced Settings if you prefer colors.
+- Custom ignore-rule patterns are case-sensitive and use JavaScript regex syntax (no inline `(?i)`); use character classes such as `[Aa]` when needed.
+- Move detection compares exact trimmed line content, so a block that was moved _and_ edited is shown as removed + added.
+- Share links contain the whole comparison; very large ones make very long URLs that some chat apps or SMS may truncate (a console warning appears past ~6,000 characters).
+- The Line Numbers and Toolbar Prism plugins only apply to the plain (non-collapsed) Unified view and to Split line numbers.
+- Batch Compare keeps files in memory for the session; nothing is saved unless you open a pair and it is recorded in History.
+- 3-Way Merge aligns line by line against the Base instead of full hunk alignment like `git merge-file`. In one narrow case — one side leaves a line alone exactly where the other side both changes it _and_ inserts next to it — it can take the changed side instead of flagging a conflict. Always review a merge before using it.
+- Out of scope on purpose, to stay 100% client-side and offline: accounts, real-time collaboration and AI-generated summaries.
+
+## Troubleshooting
+
+- **I do not see the latest version.** The service worker may still be serving the old cache. Reload twice, or in your browser's developer tools clear site data for the page.
+- **A long language name looks abbreviated.** On narrow screens the "Most used language" card shows a short form (for example `TS` or `PS`) only when the full name does not fit; the full name is the tooltip.
+- **Dropdowns look different from a native select.** That is intentional; the real select is still present for assistive technology.
+- **Something is stuck after an update.** Settings → **Reset Data** clears saved settings, history and drafts.
 
 ## Contributing
 
-Issues and pull requests are welcome. Please run `npm run lint` and `npm run format:check` before submitting a PR.
+Issues and pull requests are welcome. Please run `npm run lint`, `npm test` and `npm run format:check` before submitting a PR, and describe any UI change with screenshots in light and dark themes.
 
 ## License
 

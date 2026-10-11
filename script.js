@@ -1713,6 +1713,7 @@ document.addEventListener('DOMContentLoaded', () => {
         makefile: 'Makefile', cmake: 'CMake', properties: 'Properties', git: 'Git',
         log: 'Log file', http: 'HTTP', apacheconf: 'Apache Config', plsql: 'PL/SQL'
     };
+    window.CodeCompareLanguages = SUPPORTED_LANGUAGES;
 
     function selectLanguage(lang) {
         state.language = lang;
