@@ -86,6 +86,24 @@
         return diffArrays(tokensA, tokensB, MAX_WORD_CELLS);
     }
 
+    function wordDiffRanges(entries, side, line) {
+        const wanted = side === 'left' ? 'removed' : 'added';
+        const ranges = [];
+        let offset = 0;
+        let text = '';
+        entries.forEach(entry => {
+            if (entry.type !== 'unchanged' && entry.type !== wanted) return;
+            if (entry.type === wanted && entry.value.length > 0) {
+                const last = ranges[ranges.length - 1];
+                if (last && last.end === offset) last.end = offset + entry.value.length;
+                else ranges.push({ start: offset, end: offset + entry.value.length });
+            }
+            offset += entry.value.length;
+            text += entry.value;
+        });
+        return typeof line === 'string' && text !== line ? null : ranges;
+    }
+
     function formatDiffText(diffEntries) {
         return diffEntries.map(({ type, line }) => {
             const prefix = type === 'added' ? '+' : type === 'removed' ? '-' : ' ';
@@ -529,7 +547,7 @@
 
     const api = {
         computeLineDiff, formatDiffText, computeStats, buildSideBySideRows,
-        computeWordDiff, foldRuns, applyIgnoreRules, applyIgnoreBlankLines, detectMovedBlocks, buildUnifiedPatch,
+        computeWordDiff, wordDiffRanges, foldRuns, applyIgnoreRules, applyIgnoreBlankLines, detectMovedBlocks, buildUnifiedPatch,
         detectEncodingIssues, normalizeLineEndingsAndBom, detectLineEndingStyle, mergeThreeWay,
         pairReplacements, findConflicts, resolveConflict, resolveAllConflicts
     };

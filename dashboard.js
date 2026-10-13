@@ -680,7 +680,12 @@
         label.textContent = title;
         var pre = document.createElement('pre');
         pre.className = 'merge-conflict-code';
-        pre.textContent = lines.length ? lines.join('\n') : '(empty)';
+        var highlighter = window.CodeCompareHighlight;
+        if (lines.length && highlighter) {
+            pre.innerHTML = lines.map(highlighter.highlightLine).join('\n');
+        } else {
+            pre.textContent = lines.length ? lines.join('\n') : '(empty)';
+        }
         box.appendChild(label);
         box.appendChild(pre);
         return box;
@@ -700,8 +705,19 @@
         renderMergeConflicts();
     }
 
+    var mergeGrammarRequested = {};
+
     function renderMergeConflicts() {
         if (!window.CodeCompareDiff || !mergeConflictsEl) return;
+        // The grammar for the chosen language loads lazily; re-render once when it arrives (only once per language).
+        var highlighter = window.CodeCompareHighlight;
+        if (highlighter && !highlighter.hasGrammar()) {
+            var langKey = highlighter.language();
+            if (!mergeGrammarRequested[langKey]) {
+                mergeGrammarRequested[langKey] = true;
+                highlighter.whenReady(renderMergeConflicts);
+            }
+        }
         var conflicts = window.CodeCompareDiff.findConflicts(mergeResultOutput.value);
         mergeConflictListEl.innerHTML = '';
         mergeConflictsEl.hidden = conflicts.length === 0;

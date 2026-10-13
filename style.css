@@ -698,6 +698,8 @@ summary::-webkit-details-marker { display: none; }
 .code-themed .unified-line-num, .code-themed .split-line-num { color: var(--code-muted); opacity: 1; border-right-color: var(--code-line); }
 .code-themed .unified-line.type-added .unified-line-prefix { color: var(--code-add); }
 .code-themed .unified-line.type-removed .unified-line-prefix { color: var(--code-del); }
+.code-themed .merge-conflict-code { background-color: var(--code-bg); color: var(--code-fg); padding: 6px 8px; border-radius: var(--radius-s); }
+.code-themed .merge-conflict-side-title { color: var(--text-secondary); }
 .code-themed .fold-divider, .code-themed .split-fold-divider { color: var(--code-muted); border-color: var(--code-line); }
 .code-themed .fold-divider:hover, .code-themed .split-fold-divider:hover { color: var(--code-fg); }
 .code-themed .fold-divider .fold-icon, .code-themed .split-fold-divider .fold-icon { color: var(--code-muted); }

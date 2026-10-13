@@ -1,4 +1,4 @@
-const { computeLineDiff, formatDiffText, computeStats, buildSideBySideRows, computeWordDiff, foldRuns, applyIgnoreRules, applyIgnoreBlankLines, detectMovedBlocks, buildUnifiedPatch, detectEncodingIssues, normalizeLineEndingsAndBom, mergeThreeWay, pairReplacements, findConflicts, resolveConflict, resolveAllConflicts } = require('../diff-utils.js');
+const { computeLineDiff, formatDiffText, computeStats, buildSideBySideRows, computeWordDiff, wordDiffRanges, foldRuns, applyIgnoreRules, applyIgnoreBlankLines, detectMovedBlocks, buildUnifiedPatch, detectEncodingIssues, normalizeLineEndingsAndBom, mergeThreeWay, pairReplacements, findConflicts, resolveConflict, resolveAllConflicts } = require('../diff-utils.js');
 
 describe('computeLineDiff', () => {
     test('identical texts produce only unchanged lines', () => {
@@ -794,5 +794,43 @@ describe('conflict resolution', () => {
         const r = mergeThreeWay('a\nb\nc', 'a\nX\nc', 'a\nY\nc');
         expect(findConflicts(r.mergedText)).toHaveLength(r.conflictCount);
         expect(resolveAllConflicts(r.mergedText, 'mine')).toBe('a\nX\nc');
+    });
+});
+
+
+describe('wordDiffRanges', () => {
+    test('returns character ranges of the changed words for each side', () => {
+        const a = "const msg = 'Hello ' + name;";
+        const b = 'const msg = `Hello ${name}!`;';
+        const diff = computeWordDiff(a, b);
+        const left = wordDiffRanges(diff, 'left', a);
+        const right = wordDiffRanges(diff, 'right', b);
+        expect(left.length).toBeGreaterThan(0);
+        expect(right.length).toBeGreaterThan(0);
+        left.forEach(r => expect(r.end).toBeGreaterThan(r.start));
+        right.forEach(r => expect(r.end).toBeLessThanOrEqual(b.length));
+    });
+
+    test('ranges cover exactly the removed / added words', () => {
+        const diff = computeWordDiff('let a = 1', 'let a = 2');
+        const left = wordDiffRanges(diff, 'left', 'let a = 1');
+        const right = wordDiffRanges(diff, 'right', 'let a = 2');
+        expect(left.map(r => 'let a = 1'.slice(r.start, r.end))).toEqual(['1']);
+        expect(right.map(r => 'let a = 2'.slice(r.start, r.end))).toEqual(['2']);
+    });
+
+    test('works for Persian text', () => {
+        const diff = computeWordDiff('\u0633\u0644\u0627\u0645 \u062f\u0646\u06cc\u0627', '\u0633\u0644\u0627\u0645 \u062c\u0647\u0627\u0646');
+        const left = wordDiffRanges(diff, 'left', '\u0633\u0644\u0627\u0645 \u062f\u0646\u06cc\u0627');
+        expect(left).toEqual([{ start: 5, end: 9 }]);
+    });
+
+    test('returns null when the line does not match the diff (caller falls back)', () => {
+        const diff = computeWordDiff('a b', 'a c');
+        expect(wordDiffRanges(diff, 'left', 'something else')).toBeNull();
+    });
+
+    test('identical lines have no ranges', () => {
+        expect(wordDiffRanges(computeWordDiff('x', 'x'), 'left', 'x')).toEqual([]);
     });
 });

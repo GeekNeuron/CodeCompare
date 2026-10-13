@@ -1214,7 +1214,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function renderWordDiffHtml(entries, side) {
+    function renderWordDiffHtml(entries, side, line) {
+        const ranges = typeof line === 'string' ? CodeCompareDiff.wordDiffRanges(entries, side, line) : null;
+        if (ranges) return markWordRanges(highlightLine(line), ranges, side === 'left' ? 'word-diff-removed' : 'word-diff-added');
         return entries
             .filter(entry => side === 'left' ? entry.type !== 'added' : entry.type !== 'removed')
             .map(entry => {
@@ -1223,6 +1225,50 @@ document.addEventListener('DOMContentLoaded', () => {
                 const cls = entry.type === 'added' ? 'word-diff-added' : 'word-diff-removed';
                 return `<mark class="${cls}">${escaped}</mark>`;
             }).join('');
+    }
+
+    // Wraps the changed character ranges of an already syntax-highlighted line in <mark>, keeping every token span
+    // (and therefore the code colour theme) intact. Offsets refer to the plain text of the line.
+    function markWordRanges(html, ranges, className) {
+        if (!ranges.length) return html;
+        const box = document.createElement('div');
+        box.innerHTML = html;
+        const walker = document.createTreeWalker(box, window.NodeFilter.SHOW_TEXT);
+        const nodes = [];
+        while (walker.nextNode()) nodes.push(walker.currentNode);
+        let offset = 0;
+        let first = 0;
+        nodes.forEach(node => {
+            const text = node.nodeValue;
+            const start = offset;
+            const end = start + text.length;
+            offset = end;
+            while (first < ranges.length && ranges[first].end <= start) first++;
+            const pieces = [];
+            let pos = start;
+            for (let i = first; i < ranges.length && ranges[i].start < end; i++) {
+                const from = Math.max(ranges[i].start, start);
+                const to = Math.min(ranges[i].end, end);
+                if (from > pos) pieces.push({ text: text.slice(pos - start, from - start), marked: false });
+                pieces.push({ text: text.slice(from - start, to - start), marked: true });
+                pos = to;
+            }
+            if (!pieces.length) return;
+            if (pos < end) pieces.push({ text: text.slice(pos - start), marked: false });
+            const fragment = document.createDocumentFragment();
+            pieces.forEach(piece => {
+                if (!piece.marked) {
+                    fragment.appendChild(document.createTextNode(piece.text));
+                    return;
+                }
+                const mark = document.createElement('mark');
+                mark.className = className;
+                mark.textContent = piece.text;
+                fragment.appendChild(mark);
+            });
+            node.parentNode.replaceChild(fragment, node);
+        });
+        return box.innerHTML;
     }
 
     function foldDividerHtml(className, foldId, count) {
@@ -1250,7 +1296,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 wordDiff = CodeCompareDiff.computeWordDiff(diffEntries[removedIndex].line, diffEntries[addedIndex].line);
                 wordDiffCache.set(removedIndex, wordDiff);
             }
-            return renderWordDiffHtml(wordDiff, entry.type === 'removed' ? 'left' : 'right');
+            return renderWordDiffHtml(wordDiff, entry.type === 'removed' ? 'left' : 'right', entry.line);
         }
 
         let lineNo = 0;
@@ -1336,8 +1382,8 @@ document.addEventListener('DOMContentLoaded', () => {
             let rightCode;
             if (isReplacement) {
                 const wordDiff = CodeCompareDiff.computeWordDiff(row.left.line, row.right.line);
-                leftCode = renderWordDiffHtml(wordDiff, 'left');
-                rightCode = renderWordDiffHtml(wordDiff, 'right');
+                leftCode = renderWordDiffHtml(wordDiff, 'left', row.left.line);
+                rightCode = renderWordDiffHtml(wordDiff, 'right', row.right.line);
             } else {
                 leftCode = row.left.type !== 'empty' ? highlightLine(row.left.line) : '';
                 rightCode = row.right.type !== 'empty' ? highlightLine(row.right.line) : '';
@@ -1714,6 +1760,13 @@ document.addEventListener('DOMContentLoaded', () => {
         log: 'Log file', http: 'HTTP', apacheconf: 'Apache Config', plsql: 'PL/SQL'
     };
     window.CodeCompareLanguages = SUPPORTED_LANGUAGES;
+    // Lets the other views (3-way merge conflicts) use the same syntax highlighting and code colour theme.
+    window.CodeCompareHighlight = {
+        highlightLine,
+        hasGrammar: () => !!Prism.languages[state.language],
+        language: () => state.language,
+        whenReady: callback => ensureLanguageLoaded(state.language, callback)
+    };
 
     function selectLanguage(lang) {
         state.language = lang;

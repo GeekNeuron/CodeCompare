@@ -1,4 +1,4 @@
-const CACHE_NAME = 'codecompare-cache-v17';
+const CACHE_NAME = 'codecompare-cache-v18';
 const APP_SHELL = [
     './',
     './index.html',
